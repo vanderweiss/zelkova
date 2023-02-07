@@ -9,6 +9,24 @@ pub enum Error {
     GpuNotFound,
 }
 
+trait Token {}
+
+macro_rules! validate_type  
+{
+    ($($type:ident, )+) => {
+        $(impl Token for $type {})+
+    }
+}
+
+validate_type! {
+    i32, 
+    i64, 
+    u32, 
+    u64,
+    f32, 
+    f64, 
+}
+
 pub struct Device {
     device: wgpu::Device,
     queue: wgpu::Queue,
