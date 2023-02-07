@@ -1,0 +1,12 @@
+[package]
+name = "zelkova"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+bytemuck = "1.13"
+thiserror = "1.0"
+tokio = { version = "1.25", features = ["macros", "rt", "sync"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+wgpu = "0.15"
