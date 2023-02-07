@@ -1,3 +1,4 @@
+use std::mem;
 use thiserror::Error;
 use tokio::sync::oneshot;
 use wgpu::{include_wgsl, util::DeviceExt, BufferUsages, DeviceType};
@@ -68,7 +69,7 @@ impl Device {
     ) -> wgpu::Buffer {
         self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some(label),
-            size: len as wgpu::BufferAddress,
+            size: (len * mem::size_of::<f32>()) as _,
             usage,
             mapped_at_creation: false,
         })
@@ -137,7 +138,13 @@ impl Device {
             pass.dispatch_workgroups(lhs.len() as u32, 1, 1);
         }
 
-        encoder.copy_buffer_to_buffer(&lhs_buffer, 0, &output_buffer, 0, lhs.len() as _);
+        encoder.copy_buffer_to_buffer(
+            &lhs_buffer,
+            0,
+            &output_buffer,
+            0,
+            (lhs.len() * mem::size_of::<f32>()) as _,
+        );
 
         self.queue.submit(Some(encoder.finish()));
 
