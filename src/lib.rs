@@ -1,4 +1,5 @@
 use std::mem;
+use bytemuck::NoUninit;
 use thiserror::Error;
 use tokio::sync::oneshot;
 use wgpu::{include_wgsl, util::DeviceExt, BufferUsages, DeviceType};
@@ -9,7 +10,8 @@ pub enum Error {
     GpuNotFound,
 }
 
-trait Token {}
+// Check for matching operation tokens
+trait Token: {}
 
 macro_rules! validate_type  
 {
@@ -63,23 +65,23 @@ impl Device {
         Ok(Self { device, queue })
     }
 
-    /// Create a GPU buffer from a slice of `f32`.
-    fn create_f32_buffer(
+    /// Create a GPU buffer from a slice of `T`.
+    fn create_buffer<T: Token + NoUninit>(
         &self,
         label: &'static str,
-        buffer: &[f32],
+        buffer: &[T],
         usage: BufferUsages,
     ) -> wgpu::Buffer {
         self.device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: Some(label),
-                contents: bytemuck::cast_slice(buffer),
+                contents: bytemuck::cast_slice::<T, u8>(buffer),
                 usage,
             })
     }
 
-    /// Create an uninitialized GPU buffer of `f32`s.
-    fn create_f32_uninit_buffer(
+    /// Create an uninitialized GPU buffer of `T`s.
+    fn create_uninit_buffer<T: Token>(
         &self,
         label: &'static str,
         len: usize,
@@ -87,7 +89,7 @@ impl Device {
     ) -> wgpu::Buffer {
         self.device.create_buffer(&wgpu::BufferDescriptor {
             label: Some(label),
-            size: (len * mem::size_of::<f32>()) as _,
+            size: (len * mem::size_of::<T>()) as _,
             usage,
             mapped_at_creation: false,
         })
@@ -101,17 +103,17 @@ impl Device {
             .device
             .create_shader_module(include_wgsl!("shader.wgsl"));
 
-        let lhs_buffer = self.create_f32_buffer(
+        let lhs_buffer = self.create_buffer(
             "lhs",
             lhs,
             BufferUsages::STORAGE | BufferUsages::COPY_DST | BufferUsages::COPY_SRC,
         );
-        let rhs_buffer = self.create_f32_buffer(
+        let rhs_buffer = self.create_buffer(
             "rhs",
             rhs,
             BufferUsages::STORAGE | BufferUsages::COPY_DST | BufferUsages::COPY_SRC,
         );
-        let output_buffer = self.create_f32_uninit_buffer(
+        let output_buffer = self.create_uninit_buffer::<f32>(
             "output",
             rhs.len(),
             BufferUsages::MAP_READ | BufferUsages::COPY_DST,
