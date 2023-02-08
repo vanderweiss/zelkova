@@ -1,5 +1,5 @@
-use std::mem;
 use bytemuck::NoUninit;
+use std::mem;
 use thiserror::Error;
 use tokio::sync::oneshot;
 use wgpu::{include_wgsl, util::DeviceExt, BufferUsages, DeviceType};
@@ -10,23 +10,25 @@ pub enum Error {
     GpuNotFound,
 }
 
-// Check for matching operation tokens
-trait Token: {}
-
-macro_rules! validate_type  
-{
-    ($($type:ident, )+) => {
-        $(impl Token for $type {})+
-    }
+mod element {
+    /// Prevent others from implementing Element for their own types.
+    pub trait Sealed {}
 }
 
-validate_type! {
-    i32, 
-    i64, 
-    u32, 
-    u64,
-    f32, 
-    f64, 
+/// Valid element types to operate on.
+pub trait Element: element::Sealed + NoUninit {}
+
+macro_rules! impl_element {
+    ($($ident:ident)*) => {$(
+        impl Element for $ident {}
+        impl element::Sealed for $ident {}
+    )*}
+}
+
+impl_element! {
+    f32 f64
+    i8 i16 i32 i64 isize
+    u8 u16 u32 u64 usize
 }
 
 pub struct Device {
@@ -66,7 +68,7 @@ impl Device {
     }
 
     /// Create a GPU buffer from a slice of `T`.
-    fn create_buffer<T: Token + NoUninit>(
+    fn create_buffer<T: Element>(
         &self,
         label: &'static str,
         buffer: &[T],
@@ -81,7 +83,7 @@ impl Device {
     }
 
     /// Create an uninitialized GPU buffer of `T`s.
-    fn create_uninit_buffer<T: Token>(
+    fn create_uninit_buffer<T: Element>(
         &self,
         label: &'static str,
         len: usize,
