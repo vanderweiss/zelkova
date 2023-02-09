@@ -1,8 +1,13 @@
-use bytemuck::NoUninit;
+use std::collections::HashMap;
 use std::mem;
+
+use bytemuck::NoUninit;
 use thiserror::Error;
 use tokio::sync::oneshot;
-use wgpu::{include_wgsl, util::DeviceExt, BufferUsages, DeviceType};
+
+use wgpu::{
+    self, include_wgsl, util::DeviceExt, BufferUsages, DeviceType
+};
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -31,12 +36,12 @@ impl_element! {
     u8 u16 u32 u64 usize
 }
 
-pub struct Device {
+pub struct Handler {
     device: wgpu::Device,
     queue: wgpu::Queue,
 }
 
-impl Device {
+impl Handler {
     /// Initialize the device.
     pub async fn new() -> Result<Self, Error> {
         let instance = wgpu::Instance::default();
@@ -127,7 +132,7 @@ impl Device {
                 label: None,
                 layout: None,
                 module: &module,
-                entry_point: "main",
+                entry_point: "add",
             });
 
         let bind_group_layout = pipeline.get_bind_group_layout(0);
@@ -187,3 +192,40 @@ impl Device {
         }
     }
 }
+
+struct SharedBuffer {
+    binding: i32,
+    group: i32,
+}
+
+struct Context<'a, T: Element> {
+    handler: &'a Handler,
+    shader: &'static str,
+    lhs: &'a [T], 
+    rhs: &'a [T],
+}
+
+impl<'a, T: Element> Context<'a, T> {
+    
+    fn build_pipeline(&self, module: wgpu::ShaderModule) -> Result<wgpu::ComputePipeline, Error> {
+
+        let pipeline = self
+            .handler
+            .device
+            .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: None, layout: None,
+                module: &module, 
+                entry_point: self.shader,
+            });
+
+        Ok(pipeline)
+    }
+}
+
+
+
+
+
+
+
+

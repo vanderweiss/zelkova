@@ -1,9 +1,10 @@
 use std::array;
-use zelkova::Device;
+
+use zelkova::Handler;
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() {
-    let device = Device::new().await.unwrap();
+    let device = Handler::new().await.unwrap();
 
     let lhs: [f32; 512] = array::from_fn(|i| i as f32);
     let rhs: [f32; 512] = array::from_fn(|i| i as f32);
