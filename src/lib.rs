@@ -1,231 +1,168 @@
-use std::collections::HashMap;
-use std::mem;
-
-use bytemuck::NoUninit;
-use thiserror::Error;
-use tokio::sync::oneshot;
-
+use bytemuck::Pod;
+use std::{borrow::Cow, collections::HashMap, fmt::Write, sync::mpsc};
 use wgpu::{
-    self, include_wgsl, util::DeviceExt, BufferUsages, DeviceType
+    util::{BufferInitDescriptor, DeviceExt},
+    BufferUsages, ShaderSource,
 };
 
-#[derive(Debug, Error)]
-pub enum Error {
-    #[error("Unable to find a GPU! Make sure you have installed required drivers!")]
-    GpuNotFound,
-}
-
-mod element {
-    /// Prevent others from implementing Element for their own types.
-    pub trait Sealed {}
-}
-
-/// Valid element types to operate on.
-pub trait Element: element::Sealed + NoUninit {}
-
-macro_rules! impl_element {
-    ($($ident:ident)*) => {$(
-        impl Element for $ident {}
-        impl element::Sealed for $ident {}
-    )*}
-}
-
-impl_element! {
-    f32 f64
-    i8 i16 i32 i64 isize
-    u8 u16 u32 u64 usize
-}
-
-pub struct Handler {
+/// A device.
+#[derive(Debug)]
+pub struct Device {
+    bindings: HashMap<Box<str>, wgpu::Buffer>,
     device: wgpu::Device,
     queue: wgpu::Queue,
 }
 
-impl Handler {
-    /// Initialize the device.
-    pub async fn new() -> Result<Self, Error> {
-        let instance = wgpu::Instance::default();
-        let adapter = instance
-            .request_adapter(&wgpu::RequestAdapterOptions::default())
-            .await
-            .ok_or(Error::GpuNotFound)?;
+impl Device {
+    /// Declare a shader binding initialized with data.
+    pub fn bind<T: Pod>(&mut self, label: &str, data: &mut T) {
+        const USAGE: BufferUsages = BufferUsages::COPY_DST
+            .union(BufferUsages::COPY_SRC)
+            .union(BufferUsages::STORAGE);
 
-        let adapter_info = adapter.get_info();
+        let buffer = self.device.create_buffer_init(&BufferInitDescriptor {
+            label: Some(label),
+            contents: bytemuck::bytes_of_mut(data),
+            usage: USAGE,
+        });
 
-        tracing::info!("{adapter_info:?}");
+        self.bindings.insert(Box::from(label), buffer);
+    }
 
-        if matches!(adapter_info.device_type, DeviceType::Cpu) {
-            tracing::warn!("Adapter is llvmpipe");
-        }
+    /// Declare a shader binding containing zeros, `len` is in bytes.
+    pub fn bind_zeroed(&mut self, label: &str, len: usize) {
+        const USAGE: BufferUsages = BufferUsages::COPY_DST.union(BufferUsages::MAP_READ);
 
-        let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some(env!("CARGO_PKG_NAME")),
-                    ..Default::default()
-                },
-                None,
+        let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some(label),
+            size: len as wgpu::BufferAddress,
+            usage: USAGE,
+            mapped_at_creation: false,
+        });
+
+        self.bindings.insert(Box::from(label), buffer);
+    }
+
+    pub fn compute(&mut self, body: &str, id: [u32; 3]) {
+        let mut shader = String::new();
+        let mut entries = Vec::new();
+
+        // generate both shader bindings and bind group entries
+        for (index, (label, buffer)) in self.bindings.iter().enumerate() {
+            writeln!(
+                &mut shader,
+                "@group(0) @binding({index}) var<storage, read_write> {label}: array<f32>;"
             )
-            .await
             .unwrap();
 
-        Ok(Self { device, queue })
-    }
+            entries.push(wgpu::BindGroupEntry {
+                binding: index as u32,
+                resource: buffer.as_entire_binding(),
+            });
+        }
 
-    /// Create a GPU buffer from a slice of `T`.
-    fn create_buffer<T: Element>(
-        &self,
-        label: &'static str,
-        buffer: &[T],
-        usage: BufferUsages,
-    ) -> wgpu::Buffer {
-        self.device
-            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some(label),
-                contents: bytemuck::cast_slice::<T, u8>(buffer),
-                usage,
-            })
-    }
+        // generate the main function
+        writeln!(
+            &mut shader,
+            "@compute @workgroup_size(1) fn main(@builtin(global_invocation_id) index: vec3<u32>) {{"
+        )
+        .unwrap();
 
-    /// Create an uninitialized GPU buffer of `T`s.
-    fn create_uninit_buffer<T: Element>(
-        &self,
-        label: &'static str,
-        len: usize,
-        usage: BufferUsages,
-    ) -> wgpu::Buffer {
-        self.device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some(label),
-            size: (len * mem::size_of::<T>()) as _,
-            usage,
-            mapped_at_creation: false,
-        })
-    }
+        // add the body
+        shader.push_str(body);
 
-    /// Add lhs and rhs, returning the result.
-    pub async fn add(&self, lhs: &[f32], rhs: &[f32]) -> Vec<f32> {
-        assert_eq!(lhs, rhs, "input slices must be same length");
+        writeln!(&mut shader, "}}").unwrap();
 
+        println!("{shader}");
+        println!("{entries:?}");
+
+        let source = ShaderSource::Wgsl(Cow::Owned(shader));
+
+        // create a shader module
         let module = self
             .device
-            .create_shader_module(include_wgsl!("shader.wgsl"));
+            .create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: Some("zelkova.wgsl"),
+                source,
+            });
 
-        let lhs_buffer = self.create_buffer(
-            "lhs",
-            lhs,
-            BufferUsages::STORAGE | BufferUsages::COPY_DST | BufferUsages::COPY_SRC,
-        );
-        let rhs_buffer = self.create_buffer(
-            "rhs",
-            rhs,
-            BufferUsages::STORAGE | BufferUsages::COPY_DST | BufferUsages::COPY_SRC,
-        );
-        let output_buffer = self.create_uninit_buffer::<f32>(
-            "output",
-            rhs.len(),
-            BufferUsages::MAP_READ | BufferUsages::COPY_DST,
-        );
-
+        // create a pipeline
         let pipeline = self
             .device
             .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: None,
                 layout: None,
                 module: &module,
-                entry_point: "add",
+                entry_point: "main",
             });
 
+        // setup bind groups
         let bind_group_layout = pipeline.get_bind_group_layout(0);
         let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: lhs_buffer.as_entire_binding(),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: rhs_buffer.as_entire_binding(),
-                },
-            ],
+            entries: &entries,
         });
 
-        let mut encoder = self
-            .device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+        let mut encoder = self.device.create_command_encoder(&Default::default());
 
         {
-            let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+            let mut pass = encoder.begin_compute_pass(&Default::default());
 
             pass.set_pipeline(&pipeline);
-            pass.set_bind_group(0, &bind_group, &[]);
-            pass.set_bind_group(1, &bind_group, &[]);
-            pass.insert_debug_marker("compute add");
-            pass.dispatch_workgroups(lhs.len() as u32, 1, 1);
+
+            for binding in entries.iter() {
+                pass.set_bind_group(binding.binding, &bind_group, &[]);
+            }
+
+            let [x, y, z] = id;
+
+            pass.dispatch_workgroups(x, y, z);
         }
 
-        encoder.copy_buffer_to_buffer(
+        /*encoder.copy_buffer_to_buffer(
             &lhs_buffer,
             0,
             &output_buffer,
             0,
             (lhs.len() * mem::size_of::<f32>()) as _,
-        );
+        );*/
 
         self.queue.submit(Some(encoder.finish()));
 
-        let output_slice = output_buffer.slice(..);
-        let (tx, rx) = oneshot::channel();
+        /*let (sender, receiver) = mpsc::sync_channel(1);
 
-        output_slice.map_async(wgpu::MapMode::Read, move |result| tx.send(result).unwrap());
+        output_slice.map_async(wgpu::MapMode::Read, move |result| {
+            sender.send(result).unwrap()
+        });
 
-        self.device.poll(wgpu::Maintain::Wait);
-
-        if let Ok(Ok(())) = rx.await {
-            let data = output_slice.get_mapped_range();
-            let result: Vec<f32> = bytemuck::cast_slice(&data).to_vec();
-
-            result
-        } else {
-            panic!("no computed")
-        }
+        self.device.poll(wgpu::Maintain::Wait);*/
     }
 }
 
-struct SharedBuffer {
-    binding: i32,
-    group: i32,
-}
-
-struct Context<'a, T: Element> {
-    handler: &'a Handler,
-    shader: &'static str,
-    lhs: &'a [T], 
-    rhs: &'a [T],
-}
-
-impl<'a, T: Element> Context<'a, T> {
-    
-    fn build_pipeline(&self, module: wgpu::ShaderModule) -> Result<wgpu::ComputePipeline, Error> {
-
-        let pipeline = self
-            .handler
-            .device
-            .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                label: None, layout: None,
-                module: &module, 
-                entry_point: self.shader,
-            });
-
-        Ok(pipeline)
+impl Default for Device {
+    fn default() -> Self {
+        pollster::block_on(new_device())
     }
 }
 
+/// Obtain a new device.
+async fn new_device() -> Device {
+    let instance = wgpu::Instance::default();
 
+    let adapter = instance
+        .request_adapter(&wgpu::RequestAdapterOptions::default())
+        .await
+        .unwrap();
 
+    let (device, queue) = adapter
+        .request_device(&wgpu::DeviceDescriptor::default(), None)
+        .await
+        .unwrap();
 
-
-
-
-
+    Device {
+        bindings: HashMap::new(),
+        device,
+        queue,
+    }
+}
