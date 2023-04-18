@@ -1,8 +1,8 @@
 use bytemuck::Pod;
-use std::{borrow::Cow, collections::HashMap, fmt::Write, sync::mpsc};
+use std::{borrow::Cow, collections::HashMap, fmt::Write, num::{NonZeroU32, NonZeroU64}};
 use wgpu::{
     util::{BufferInitDescriptor, DeviceExt},
-    BufferUsages, ShaderSource,
+    BufferUsages, ShaderSource, BindGroupLayoutEntry,
 };
 
 /// A device.
@@ -28,7 +28,7 @@ impl Device {
 
         self.bindings.insert(Box::from(label), buffer);
     }
-
+    
     /// Declare a shader binding containing zeros, `len` is in bytes.
     pub fn bind_zeroed(&mut self, label: &str, len: usize) {
         const USAGE: BufferUsages = BufferUsages::COPY_DST.union(BufferUsages::MAP_READ);
@@ -44,8 +44,11 @@ impl Device {
     }
 
     pub fn compute(&mut self, body: &str, id: [u32; 3]) {
+        
         let mut shader = String::new();
-        let mut entries = Vec::new();
+
+        let mut entries_layout = Vec::new();
+        let mut entries_binding = Vec::new();
 
         // generate both shader bindings and bind group entries
         for (index, (label, buffer)) in self.bindings.iter().enumerate() {
@@ -55,7 +58,20 @@ impl Device {
             )
             .unwrap();
 
-            entries.push(wgpu::BindGroupEntry {
+            entries_layout.push(wgpu::BindGroupLayoutEntry {
+                binding: index as u32,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage {
+                        read_only: false,
+                    },
+                    has_dynamic_offset: false,
+                    min_binding_size: NonZeroU64::new(32),
+                },
+                count: NonZeroU32::new(32),
+            });
+
+            entries_binding.push(wgpu::BindGroupEntry {
                 binding: index as u32,
                 resource: buffer.as_entire_binding(),
             });
@@ -74,7 +90,6 @@ impl Device {
         writeln!(&mut shader, "}}").unwrap();
 
         println!("{shader}");
-        println!("{entries:?}");
 
         let source = ShaderSource::Wgsl(Cow::Owned(shader));
 
@@ -87,21 +102,23 @@ impl Device {
             });
 
         // create a pipeline
-        let pipeline = self
-            .device
+        let pipeline = self.device
             .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: None,
                 layout: None,
                 module: &module,
                 entry_point: "main",
             });
+        
+        let bind_group_layout = self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: None,
+            entries: &entries_layout,
+        });
 
-        // setup bind groups
-        let bind_group_layout = pipeline.get_bind_group_layout(0);
         let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
             layout: &bind_group_layout,
-            entries: &entries,
+            entries: &entries_binding,
         });
 
         let mut encoder = self.device.create_command_encoder(&Default::default());
@@ -111,7 +128,7 @@ impl Device {
 
             pass.set_pipeline(&pipeline);
 
-            for binding in entries.iter() {
+            for binding in entries_binding.iter() {
                 pass.set_bind_group(binding.binding, &bind_group, &[]);
             }
 
@@ -120,13 +137,13 @@ impl Device {
             pass.dispatch_workgroups(x, y, z);
         }
 
-        /*encoder.copy_buffer_to_buffer(
+        /* encoder.copy_buffer_to_buffer(
             &lhs_buffer,
             0,
             &output_buffer,
             0,
             (lhs.len() * mem::size_of::<f32>()) as _,
-        );*/
+        ); */
 
         self.queue.submit(Some(encoder.finish()));
 
@@ -148,6 +165,7 @@ impl Default for Device {
 
 /// Obtain a new device.
 async fn new_device() -> Device {
+
     let instance = wgpu::Instance::default();
 
     let adapter = instance
@@ -155,8 +173,11 @@ async fn new_device() -> Device {
         .await
         .unwrap();
 
-    let (device, queue) = adapter
-        .request_device(&wgpu::DeviceDescriptor::default(), None)
+    let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
+            label: None,
+            features: wgpu::Features::all(),
+            limits: wgpu::Limits::downlevel_defaults(),
+        }, None)
         .await
         .unwrap();
 
