@@ -1,2 +1,2 @@
 # zelkova
-gpu moment when the do uwu
+gpu moment. do
