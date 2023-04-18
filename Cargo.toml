@@ -4,6 +4,6 @@ version = "0.0.0"
 edition = "2021"
 
 [dependencies]
-bytemuck = { default-features = false, version = "1.13.0" }
-pollster = { default-features = false, version = "0.3.0" }
-wgpu = { default-features = false, features = ["wgsl"], version = "0.15.1" }
+bytemuck = { version = "1.13.1", default-features = false }
+pollster = { version = "0.3.0", default-features = false }
+wgpu = { version = "0.15.1", default-features = false, features = ["wgsl"] }

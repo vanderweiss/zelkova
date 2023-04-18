@@ -1,8 +1,15 @@
-use bytemuck::Pod;
-use std::{borrow::Cow, collections::HashMap, fmt::Write, num::{NonZeroU32, NonZeroU64}};
-use wgpu::{
-    util::{BufferInitDescriptor, DeviceExt},
-    BufferUsages, ShaderSource, BindGroupLayoutEntry,
+use {
+    bytemuck::Pod,
+    std::{
+        borrow::Cow,
+        collections::HashMap,
+        fmt::Write,
+        num::{NonZeroU32, NonZeroU64},
+    },
+    wgpu::{
+        util::{BufferInitDescriptor, DeviceExt},
+        BufferUsages, ShaderSource,
+    },
 };
 
 /// A device.
@@ -28,7 +35,7 @@ impl Device {
 
         self.bindings.insert(Box::from(label), buffer);
     }
-    
+
     /// Declare a shader binding containing zeros, `len` is in bytes.
     pub fn bind_zeroed(&mut self, label: &str, len: usize) {
         const USAGE: BufferUsages = BufferUsages::COPY_DST.union(BufferUsages::MAP_READ);
@@ -44,7 +51,6 @@ impl Device {
     }
 
     pub fn compute(&mut self, body: &str, id: [u32; 3]) {
-        
         let mut shader = String::new();
 
         let mut entries_layout = Vec::new();
@@ -62,9 +68,7 @@ impl Device {
                 binding: index as u32,
                 visibility: wgpu::ShaderStages::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Storage {
-                        read_only: false,
-                    },
+                    ty: wgpu::BufferBindingType::Storage { read_only: false },
                     has_dynamic_offset: false,
                     min_binding_size: NonZeroU64::new(32),
                 },
@@ -102,18 +106,21 @@ impl Device {
             });
 
         // create a pipeline
-        let pipeline = self.device
+        let pipeline = self
+            .device
             .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: None,
                 layout: None,
                 module: &module,
                 entry_point: "main",
             });
-        
-        let bind_group_layout = self.device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-            label: None,
-            entries: &entries_layout,
-        });
+
+        let bind_group_layout =
+            self.device
+                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    label: None,
+                    entries: &entries_layout,
+                });
 
         let bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: None,
@@ -137,53 +144,30 @@ impl Device {
             pass.dispatch_workgroups(x, y, z);
         }
 
-        /* encoder.copy_buffer_to_buffer(
-            &lhs_buffer,
-            0,
-            &output_buffer,
-            0,
-            (lhs.len() * mem::size_of::<f32>()) as _,
-        ); */
-
         self.queue.submit(Some(encoder.finish()));
-
-        /*let (sender, receiver) = mpsc::sync_channel(1);
-
-        output_slice.map_async(wgpu::MapMode::Read, move |result| {
-            sender.send(result).unwrap()
-        });
-
-        self.device.poll(wgpu::Maintain::Wait);*/
     }
 }
 
 impl Default for Device {
     fn default() -> Self {
-        pollster::block_on(new_device())
-    }
-}
+        pollster::block_on(async move {
+            let instance = wgpu::Instance::default();
 
-/// Obtain a new device.
-async fn new_device() -> Device {
+            let adapter = instance
+                .request_adapter(&wgpu::RequestAdapterOptions::default())
+                .await
+                .unwrap();
 
-    let instance = wgpu::Instance::default();
+            let (device, queue) = adapter
+                .request_device(&wgpu::DeviceDescriptor::default(), None)
+                .await
+                .unwrap();
 
-    let adapter = instance
-        .request_adapter(&wgpu::RequestAdapterOptions::default())
-        .await
-        .unwrap();
-
-    let (device, queue) = adapter.request_device(&wgpu::DeviceDescriptor {
-            label: None,
-            features: wgpu::Features::all(),
-            limits: wgpu::Limits::downlevel_defaults(),
-        }, None)
-        .await
-        .unwrap();
-
-    Device {
-        bindings: HashMap::new(),
-        device,
-        queue,
+            Device {
+                bindings: HashMap::new(),
+                device,
+                queue,
+            }
+        })
     }
 }
