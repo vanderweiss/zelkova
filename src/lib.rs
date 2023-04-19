@@ -32,12 +32,6 @@ impl Handler {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         Ok(encoder)
     }
-
-    pub fn pack_module(&self) -> Result<wgpu::ShaderModule, wgpu::Error> {
-        let module = self.device
-            .create_shader_module(wgpu::include_wgsl!("zelkova.wsgl"));
-        Ok(module)
-    }
 }
 
 pub struct ComputeContext {
@@ -50,3 +44,17 @@ impl ComputeContext {
 
     pub fn run() {}
 }
+
+pub trait ShaderHelper {
+    fn base(device: &wgpu::Device) -> Result<wgpu::ShaderModule, wgpu::Error>;
+}
+
+impl ShaderHelper for wgpu::ShaderModule {
+    // Utils for modules
+    fn base(device: &wgpu::Device) -> Result<wgpu::ShaderModule, wgpu::Error> {
+        let module = device
+            .create_shader_module(wgpu::include_wgsl!("zelkova.wsgl"));
+        Ok(module)
+    } 
+}
+
