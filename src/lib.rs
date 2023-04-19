@@ -1,6 +1,11 @@
-use wgpu;
-
-use pollster;
+use {
+    wgpu::{
+        self,
+    },
+    pollster::{
+        self,
+    },
+};
 
 // Main abstraction layer for wgpu internals
 pub struct Handler {
