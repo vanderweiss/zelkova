@@ -35,11 +35,15 @@ impl Handler {
 }
 
 pub struct ComputeContext {
+    bindgroup: wgpu::BindGroup,
+    pass: wgpu::ComputePass,
+    pipeline: wgpu::ComputePipeline,
 }
 
 impl ComputeContext {
     // Wrapper around a comput shader and its components
-    pub fn create(encoder: wgpu::CommandEncoder, module: wgpu::ShaderModule) {
+    pub fn create(encoder: wgpu::CommandEncoder, module: wgpu::ShaderModule) -> Result<Self, wgpu::Error> { 
+        
     }
 
     pub fn run() {}
