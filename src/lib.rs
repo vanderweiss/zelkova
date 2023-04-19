@@ -50,6 +50,16 @@ impl Handler {
     }
 }
 
+pub struct BufferEntry {
+    binding: wgpu::BindGroupEntry,
+    layout: wgpu::BindGroupLayoutEntry,
+    buffer: wgpu::Buffer,
+}
+
+impl BufferEntry {
+    pub fn process() -> Self {}
+}
+
 pub struct ComputeContext {
     bindgroup: wgpu::BindGroup,
     pass: wgpu::ComputePass,
@@ -62,7 +72,7 @@ impl ComputeContext {
        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
     }
 
-    pub fn run() {}
+    pub fn run(&self) {}
 }
 
 pub trait ShaderHelper {
