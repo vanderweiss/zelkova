@@ -37,6 +37,17 @@ impl Handler {
             .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         Ok(encoder)
     }
+
+    pub fn construct_pipeline(&self, module: &wgpu::ShaderModule, entry_point: &'static str) -> Result<wgpu::ComputePipeline, wgpu::Error> {
+        let pipeline = self.device
+            .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+                label: None,
+                layout: None,
+                module, 
+                entry_point,
+            });
+        Ok(pipeline)
+    }
 }
 
 pub struct ComputeContext {
@@ -47,8 +58,8 @@ pub struct ComputeContext {
 
 impl ComputeContext {
     // Wrapper around a comput shader and its components
-    pub fn create(encoder: wgpu::CommandEncoder, module: wgpu::ShaderModule) -> Result<Self, wgpu::Error> { 
-        
+    pub fn create(encoder: wgpu::CommandEncoder, pipeline: wgpu::ComputePipeline) -> Result<Self, wgpu::Error> {        
+       let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
     }
 
     pub fn run() {}
@@ -63,7 +74,7 @@ impl ShaderHelper for wgpu::ShaderModule {
     fn base(device: &wgpu::Device) -> Result<wgpu::ShaderModule, wgpu::Error> {
         let module = device
             .create_shader_module(wgpu::include_wgsl!("zelkova.wsgl"));
-        Ok(module)
+        Ok(module) 
     } 
 }
 
