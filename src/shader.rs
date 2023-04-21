@@ -1,3 +1,5 @@
+// Main abstraction layer between wgpu and the low level user API
+
 use {
     wgpu::{
         self,
@@ -7,7 +9,7 @@ use {
     },
 };
 
-// Main abstraction layer for wgpu internals
+// Interface to handle wgpu internals
 pub struct Handler {
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -32,13 +34,13 @@ impl Handler {
         }) 
     }
 
-    pub fn retrieve_encoder(&self) -> Result<wgpu::CommandEncoder, wgpu::Error> {
+    pub fn encoder(&self) -> Result<wgpu::CommandEncoder, wgpu::Error> {
         let encoder = self.device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
         Ok(encoder)
     }
 
-    pub fn construct_pipeline(&self, module: &wgpu::ShaderModule, entry_point: &'static str) -> Result<wgpu::ComputePipeline, wgpu::Error> {
+    pub fn pipeline(&self, module: &wgpu::ShaderModule, entry_point: &'static str) -> Result<wgpu::ComputePipeline, wgpu::Error> {
         let pipeline = self.device
             .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: None,
@@ -50,24 +52,24 @@ impl Handler {
     }
 }
 
-pub struct BufferEntry {
-    binding: wgpu::BindGroupEntry,
+pub struct BufferEntry<'a> {
+    binding: wgpu::BindGroupEntry<'a>,
     layout: wgpu::BindGroupLayoutEntry,
     buffer: wgpu::Buffer,
 }
 
-impl BufferEntry {
+impl BufferEntry<'_> {
     pub fn process() -> Self {}
 }
 
-pub struct ComputeContext {
+pub struct ComputeContext<'a> {
     bindgroup: wgpu::BindGroup,
-    pass: wgpu::ComputePass,
+    pass: wgpu::ComputePass<'a>,
     pipeline: wgpu::ComputePipeline,
 }
 
-impl ComputeContext {
-    // Wrapper around a comput shader and its components
+impl ComputeContext<'_> {
+    // Wrapper around a compute shader and its components
     pub fn create(encoder: wgpu::CommandEncoder, pipeline: wgpu::ComputePipeline) -> Result<Self, wgpu::Error> {        
        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
     }

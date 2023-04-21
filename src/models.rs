@@ -1,8 +1,10 @@
+// High level user API, exposed as it acts as the toolkit itself
+
 use {
     bytemuck::NoUninit,
-}
+};
 
-use shader;
+use super::interface::*;
 
 mod element {
    pub trait Sealed {} 
@@ -20,7 +22,7 @@ macro_rules! impl_element {
 impl_element! {
     u16 u32 u64
     i16 i32 i64
-    f16 f32 f64
+    f32 f64
 }
 
 pub enum TensorRank {
@@ -30,14 +32,14 @@ pub enum TensorRank {
     Cube(u64, u64, u64),
 }
 
-pub struct Tensor<T: impl Element, const N: usize> {
+pub struct Tensor<T: Element, const N: usize> {
     rank: TensorRank,
 }
 
-impl<T: impl Element, const N: usize> {
+impl<T: Element, const N: usize> Tensor<T, N> {
     
 }
 
-tensor! {}
+//tensor! {}
 
 
