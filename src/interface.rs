@@ -5,9 +5,29 @@ use {
         collections::HashMap,
         default::Default,
     },
+    bytemuck::NoUninit,
 };
 
 use super::shader::*;
+
+mod element {
+   pub trait Sealed {} 
+}
+
+pub trait Element: element::Sealed + NoUninit {}
+
+macro_rules! impl_element {
+    ($($ident:ident)*) => {$(
+        impl Element for $ident {}
+        impl element::Sealed for $ident {}
+    )*}
+}
+
+impl_element! {
+    u16 u32 u64
+    i16 i32 i64
+    f32 f64
+}
 
 // Buffers associated with toolkit models, contiguous arrays mostly
 pub struct Bundle<'a> {
@@ -15,16 +35,22 @@ pub struct Bundle<'a> {
     link: BufferEntry<'a>,
 }
 
-impl Bundle<'_> {
-    // Returns Self
-    pub fn pack() {
-        
-    }
+impl Bundle<'_> {}
+
+pub enum NodePosition {
+   Head, 
+   Body,
+   Tail,
+}
+
+pub struct Node<'a> {
+    bundle: Bundle<'a>,
+    position: NodePosition,
 }
 
 // GPU memory layout in respect to Bundle containers
 pub struct Layout<'a> {
-    mapping: HashMap<u16, Bundle<'a>>,
+    mapping: HashMap<u16, Node<'a>>,
 }
 
 impl Layout<'_> {
@@ -33,21 +59,15 @@ impl Layout<'_> {
             mapping: HashMap::new(),
        } 
     }
-    // Returns Bundle
-    pub fn schedule(&self) {
+
+    pub fn schedule<T: Element, const N: usize>(&self, container: [T; N]) -> Bundle {
+        let entry = BufferEntry::bind(&container);
         
+        Bundle {
+            binded: true,
+            link: entry,
+        }
     }
-}
-
-pub enum NodePlacement {
-    Head,
-    Body,
-    Tail,
-}
-
-pub struct Node<'a> {
-    bundle: Bundle<'a>,
-    placement: NodePlacement,
 }
 
 // Container for lazy execution
