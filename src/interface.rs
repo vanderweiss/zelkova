@@ -36,6 +36,10 @@ pub enum Operation {
 
 }
 
+pub struct Node<'a> {
+    bundle: Bundle<'a>,
+}
+
 // Container for lazy execution
 pub struct OperationContext<'a> {
     governor: &'static Governor,
@@ -43,6 +47,10 @@ pub struct OperationContext<'a> {
 }
 
 impl OperationContext<'_> {
+    pub fn pack() -> Self {
+
+    }
+
     pub fn process(&self) {
 
     }
@@ -73,9 +81,5 @@ impl Governor {
             handler: Handler::request()?,
             options: options.unwrap_or_default(),
         }
-    }
-
-    pub fn pack(&self) -> OperationContext {
-        
     }
 }

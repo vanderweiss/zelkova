@@ -1,6 +1,10 @@
 // Main abstraction layer between wgpu and the low level user API
 
 use {
+    std::{
+        borrow::Cow,
+        default::Default,  
+    },
     wgpu::{
         self,
     },
@@ -11,7 +15,9 @@ use {
 
 // Interface to handle wgpu internals
 pub struct Handler {
+    adapter: wgpu::Adapter,
     device: wgpu::Device,
+    encoder: wgpu::CommandEncoder,
     queue: wgpu::Queue,
 }
 
@@ -28,27 +34,37 @@ impl Handler {
                 .await
                 .unwrap();
 
-            let handler = Self { device, queue };
+            let encoder = device
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor::default()) 
+                .unwrap();
+
+            let handler = Self { 
+                adapter,
+                device,
+                encoder,
+                queue,
+            };
 
             Ok(handler)
         }) 
     }
 
-    pub fn encoder(&self) -> Result<wgpu::CommandEncoder, wgpu::Error> {
-        let encoder = self.device
-            .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
-        Ok(encoder)
-    }
+    pub fn load_module(&self, module: Cow<'_, str>) -> Result<(wgpu::ShaderModule, wgpu::ComputePipeline), wgpu::Error> { 
+        let module = self.device
+            .create_shader_module(wgpu::ShaderModuleDescriptor {
+                label: None,
+                source: module,
+            });
 
-    pub fn pipeline(&self, module: &wgpu::ShaderModule, entry_point: &'static str) -> Result<wgpu::ComputePipeline, wgpu::Error> {
         let pipeline = self.device
             .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: None,
                 layout: None,
-                module, 
-                entry_point,
+                module: &module,
+                entry_point: "main",
             });
-        Ok(pipeline)
+        
+        Ok((module, pipeline))
     }
 }
 
@@ -70,23 +86,9 @@ pub struct ComputeContext<'a> {
 
 impl ComputeContext<'_> {
     // Wrapper around a compute shader and its components
-    pub fn create(encoder: wgpu::CommandEncoder, pipeline: wgpu::ComputePipeline) -> Result<Self, wgpu::Error> {        
+    pub fn pack(encoder: wgpu::CommandEncoder, pipeline: wgpu::ComputePipeline) -> Result<Self, wgpu::Error> {        
        let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
     }
 
     pub fn run(&self) {}
 }
-
-pub trait ShaderHelper {
-    fn base(device: &wgpu::Device) -> Result<wgpu::ShaderModule, wgpu::Error>;
-}
-
-impl ShaderHelper for wgpu::ShaderModule {
-    // Utils for modules
-    fn base(device: &wgpu::Device) -> Result<wgpu::ShaderModule, wgpu::Error> {
-        let module = device
-            .create_shader_module(wgpu::include_wgsl!("zelkova.wsgl"));
-        Ok(module) 
-    } 
-}
-
