@@ -33,6 +33,7 @@ pub enum TensorRank {
 }
 
 pub struct Tensor<T: Element, const N: usize> {
+    _tensor: [T; N],
     rank: TensorRank,
 }
 
@@ -40,6 +41,10 @@ impl<T: Element, const N: usize> Tensor<T, N> {
     
 }
 
-//tensor! {}
+macro_rules! tensor {
+    ($($ident:ident ,)) => {
+     
+    }
+}
 
 

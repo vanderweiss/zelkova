@@ -35,8 +35,7 @@ impl Handler {
                 .unwrap();
 
             let encoder = device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor::default()) 
-                .unwrap();
+                .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
 
             let handler = Self { 
                 adapter,
@@ -53,7 +52,7 @@ impl Handler {
         let module = self.device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: None,
-                source: module,
+                source: wgpu::ShaderSource::Wgsl(module),
             });
 
         let pipeline = self.device
@@ -75,8 +74,9 @@ pub struct BufferEntry<'a> {
 }
 
 impl BufferEntry<'_> {
-    pub fn pack() -> Self {
-        
+    // Returns Self
+    pub fn pack() {
+    
     }
 }
 
@@ -88,9 +88,7 @@ pub struct ComputeContext<'a> {
 
 impl ComputeContext<'_> {
     // Wrapper around a compute shader and its components
-    pub fn pack(encoder: wgpu::CommandEncoder, pipeline: wgpu::ComputePipeline) -> Result<Self, wgpu::Error> {        
-       let mut pass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor::default());
-    }
+    // pub fn pack(encoder: wgpu::CommandEncoder, pipeline: wgpu::ComputePipeline) -> Result<Self, wgpu::Error> {}
 
     pub fn run(&self) {}
 }

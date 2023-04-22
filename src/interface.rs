@@ -9,25 +9,33 @@ use {
 
 use super::shader::*;
 
-// Buffers associated with toolkit models
+// Buffers associated with toolkit models, contiguous arrays mostly
 pub struct Bundle<'a> {
+    binded: bool, 
     link: BufferEntry<'a>,
-    valid: bool,
 }
 
 impl Bundle<'_> {
-    pub fn pack() -> Self {
+    // Returns Self
+    pub fn pack() {
         
     }
 }
 
-// GPU memory layout
+// GPU memory layout in respect to Bundle containers
 pub struct Layout<'a> {
     mapping: HashMap<u16, Bundle<'a>>,
 }
 
 impl Layout<'_> {
-    pub fn schedule(&self) -> Bundle {
+    pub fn create() -> Self {
+       Self {
+            mapping: HashMap::new(),
+       } 
+    }
+    // Returns Bundle
+    pub fn schedule(&self) {
+        
     }
 }
 
@@ -44,17 +52,18 @@ pub struct Node<'a> {
 
 // Container for lazy execution
 pub struct OperationContext<'a> {
-    governor: &'static Governor,
+    governor: &'static Governor<'static>,
     relative: ComputeContext<'a>,
 }
 
 impl OperationContext<'_> {
-    pub fn pack() -> Self {
-
+    // Returns Self
+    pub fn pack() {
+        
     }
-
+    // Returns Node
     pub fn process(&self) {
-
+        
     }
 }
 
@@ -72,15 +81,17 @@ impl Default for GovernorOptions {
 }
 
 // Middlepoint for any calls between users and wgpu
-pub struct Governor {
+pub struct Governor<'a> {
     handler: Handler,
+    layout: Layout<'a>,
     options: GovernorOptions,
 }
 
-impl Governor {
+impl Governor<'_> {
     pub fn new(options: Option<GovernorOptions>) -> Self {
         Self {
-            handler: Handler::request()?,
+            handler: Handler::request().unwrap(),
+            layout: Layout::create(),
             options: options.unwrap_or_default(),
         }
     }
