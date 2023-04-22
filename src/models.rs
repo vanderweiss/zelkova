@@ -10,7 +10,7 @@ mod element {
    pub trait Sealed {} 
 }
 
-trait Element: element::Sealed + NoUninit {}
+pub trait Element: element::Sealed + NoUninit {}
 
 macro_rules! impl_element {
     ($($ident:ident)*) => {$(
@@ -25,6 +25,7 @@ impl_element! {
     f32 f64
 }
 
+#[derive(Debug)]
 pub enum TensorRank {
     Scalar,
     Vector(u64),
@@ -32,18 +33,24 @@ pub enum TensorRank {
     Cube(u64, u64, u64),
 }
 
+impl TensorRank {}
+
+#[derive(Debug)]
 pub struct Tensor<T: Element, const N: usize> {
     _tensor: [T; N],
-    rank: TensorRank,
+    _rank: TensorRank,
 }
 
 impl<T: Element, const N: usize> Tensor<T, N> {
-    
+    pub fn cast(&self) {}
+
+    pub fn _resize(&self) {}
 }
 
+#[macro_use]
 macro_rules! tensor {
-    ($($ident:ident ,)) => {
-     
+    () => {
+
     }
 }
 
