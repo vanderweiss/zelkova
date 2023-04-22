@@ -31,13 +31,15 @@ impl Layout<'_> {
     }
 }
 
-// Enum or bitflags mmmmm
-pub enum Operation {
-
+pub enum NodePlacement {
+    Head,
+    Body,
+    Tail,
 }
 
 pub struct Node<'a> {
     bundle: Bundle<'a>,
+    placement: NodePlacement,
 }
 
 // Container for lazy execution

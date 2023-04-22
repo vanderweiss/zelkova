@@ -75,7 +75,9 @@ pub struct BufferEntry<'a> {
 }
 
 impl BufferEntry<'_> {
-    pub fn process() -> Self {}
+    pub fn pack() -> Self {
+        
+    }
 }
 
 pub struct ComputeContext<'a> {
