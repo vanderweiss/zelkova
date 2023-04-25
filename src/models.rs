@@ -93,17 +93,25 @@ macro_rules! tsr {
 
     ( $ ( [ $root:literal $ (, $next:literal)* ] $(,)? )*  ) => { 
         {
-            let (mut x, mut y) = (0, 0);
+            let (mut x, mut y) = (1, 0);
+            let mut depth = true;
             let _tensor = [
                 $ (
-                    {
-                        x = x + 1;
+                    {   
+                        y = y + 1;
+
+                        if y > 1 {
+                            depth = false;
+                        }
+
                         $root
                     }, 
                     $ (
+                        {   
+                            if depth {
+                                x = x + 1;
+                            }
 
-                        {
-                            y = y + 1;
                             $next
                         },
                     )*
