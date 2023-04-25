@@ -44,9 +44,12 @@ macro_rules! tensor {
     () => {};
 
     ( $root:literal $ (, $next:literal )* $(,)? ) => {
-        || { let _tensor = [$root $ (
-                , $next
-            )*];
+        || { 
+            let _tensor = [
+                $root $ (
+                    , $next
+                )*
+            ];
             
             let _rank = TensorRank::Vector(_tensor.len() as u64);
             
@@ -59,11 +62,30 @@ macro_rules! tensor {
     };
 
     ( $ ( [ $root:literal $ (, $next:literal)* ] $(,)? )*  ) => { 
-        $ ( $root
-            $ (
-                $next
-            )*
-        )*
+        || {
+            let (mut x, mut y) = (0, 0);
+            let _tensor = [
+                $ (
+                    || {
+                        x = x + 1;
+                        $root
+                    }, 
+                    $ (
+                        || {
+                            y = y + 1;
+                            $next
+                        },
+                    )*
+                )*
+            ];
+
+            let _rank = TensorRank::Matrix(x as u64, y as u64);
+            
+            Tensor {
+                _tensor,
+                _rank,
+            }
+        }
     };
 
 }
