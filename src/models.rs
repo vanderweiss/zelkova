@@ -74,7 +74,7 @@ macro_rules! tsr {
     () => {};
 
     ( $root:literal $ (, $next:literal )* $(,)? ) => {
-        (|| { 
+        { 
             let _tensor = [
                 $root $ (
                     , $next
@@ -87,25 +87,25 @@ macro_rules! tsr {
                 _tensor, 
                 rank,
             }
-        })()
+        }
             
     };
 
     ( $ ( [ $root:literal $ (, $next:literal)* ] $(,)? )*  ) => { 
-        (|| {
+        {
             let (mut x, mut y) = (0, 0);
             let _tensor = [
                 $ (
-                    (|| {
+                    {
                         x = x + 1;
                         $root
-                    })(), 
+                    }, 
                     $ (
 
-                        (|| {
+                        {
                             y = y + 1;
                             $next
-                        })(),
+                        },
                     )*
                 )*
             ];
@@ -116,7 +116,7 @@ macro_rules! tsr {
                 _tensor,
                 rank,
             }
-        })()
+        }
     };
 
 }
