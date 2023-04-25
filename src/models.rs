@@ -66,15 +66,15 @@ macro_rules! tensor {
             let (mut x, mut y) = (0, 0);
             let _tensor = [
                 $ (
-                    || {
+                    (|| {
                         x = x + 1;
                         $root
-                    }, 
+                    })(), 
                     $ (
-                        || {
+                        (|| {
                             y = y + 1;
                             $next
-                        },
+                        })(),
                     )*
                 )*
             ];
