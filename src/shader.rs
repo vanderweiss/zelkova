@@ -75,8 +75,8 @@ pub struct BufferEntry<'a> {
 
 impl BufferEntry<'_> {
     // Returns Self
-    pub fn bind<T, const N: usize>(container: &[T; N]) -> Self { 
-    }
+    /*pub fn bind<T, const N: usize>(container: &[T; N]) -> Self { 
+    }*/
 
     pub fn free() {}
 }

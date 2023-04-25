@@ -1,8 +1,13 @@
 // High level user API, exposed as it acts as the toolkit itself
 
+use {
+    std::{
+        ops::{self},
+    }
+};
+
 use super::interface::*;
 
-#[derive(Debug)]
 pub enum TensorRank {
     Scalar,
     Vector(u64),
@@ -12,23 +17,53 @@ pub enum TensorRank {
 
 impl TensorRank {}
 
-#[derive(Debug)]
 pub struct Tensor<T: Element, const N: usize> {
-    _tensor: [T; N],
-    _rank: TensorRank,
+    pub _tensor: [T; N],
+    pub _rank: TensorRank,
 }
 
 impl<T: Element, const N: usize> Tensor<T, N> {
+
+    pub fn from_array(array: [T; N], rank: TensorRank) -> Self {
+        Self {
+            _tensor: array,
+            _rank: rank,
+        }
+    }
+    
+
     pub fn cast(&self) {}
 
     pub fn _resize(&self) {}
 }
 
 // vec! yoink ez 
-#[macro_use]
+#[macro_export]
 macro_rules! tensor {
-    () => {
+    
+    () => {};
 
-    }
+    ( $root:literal $ (, $next:literal )* $(,)? ) => {
+        || { let _tensor = [$root $ (
+                , $next
+            )*];
+            
+            let _rank = TensorRank::Vector(_tensor.len() as u64);
+            
+            Tensor {
+                _tensor, 
+                _rank,
+            }
+        }
+            
+    };
+
+    ( $ ( [ $root:literal $ (, $next:literal)* ] $(,)? )*  ) => { 
+        $ ( $root
+            $ (
+                $next
+            )*
+        )*
+    };
+
 }
-

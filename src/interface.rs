@@ -60,14 +60,14 @@ impl Layout<'_> {
        } 
     }
 
-    pub fn schedule<T: Element, const N: usize>(&self, container: [T; N]) -> Bundle {
+    /*pub fn schedule<T: Element, const N: usize>(&self, container: [T; N]) -> Bundle {
         let entry = BufferEntry::bind(&container);
         
         Bundle {
             binded: true,
             link: entry,
         }
-    }
+    }*/
 }
 
 // Container for lazy execution
