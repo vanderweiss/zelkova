@@ -1,17 +1,14 @@
 // Low level user API behind the toolkit
 
 use {
-    std::{
-        collections::HashMap,
-        default::Default,
-    },
     bytemuck::NoUninit,
+    std::{collections::HashMap, default::Default},
 };
 
 use super::shader::*;
 
 mod element {
-   pub trait Sealed {} 
+    pub trait Sealed {}
 }
 
 pub trait Element: element::Sealed + NoUninit {}
@@ -31,16 +28,23 @@ impl_element! {
 
 // Buffers associated with toolkit models, contiguous arrays mostly
 pub struct Bundle<'a> {
-    binded: bool, 
+    binded: bool,
     link: BufferEntry<'a>,
 }
 
-impl Bundle<'_> {}
+impl Bundle<'_> {
+    pub fn bind<T: Element, const N: usize>(content: &[T; N], id: u32) -> Self {
+        Self {
+            binded: true,
+            link: BufferEntry::bind(content, id),
+        }
+    }
+}
 
 pub enum NodePosition {
-   Head, 
-   Body,
-   Tail,
+    Head,
+    Body,
+    Tail,
 }
 
 pub struct Node<'a> {
@@ -55,14 +59,15 @@ pub struct Layout<'a> {
 
 impl Layout<'_> {
     pub fn create() -> Self {
-       Self {
+        Self {
             mapping: HashMap::new(),
-       } 
+        }
     }
 
     /*pub fn schedule<T: Element, const N: usize>(&self, container: [T; N]) -> Bundle {
-        let entry = BufferEntry::bind(&container);
-        
+
+    let entry = BufferEntry::bind(&container);
+
         Bundle {
             binded: true,
             link: entry,
@@ -78,13 +83,9 @@ pub struct OperationContext<'a> {
 
 impl OperationContext<'_> {
     // Returns Self
-    pub fn pack() {
-        
-    }
+    pub fn pack() {}
     // Returns Node
-    pub fn process(&self) {
-        
-    }
+    pub fn process(&self) {}
 }
 
 // Soon

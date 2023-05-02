@@ -1,16 +1,9 @@
 // Main abstraction layer between wgpu and the low level user API
 
 use {
-    std::{
-        borrow::Cow,
-        default::Default,  
-    },
-    wgpu::{
-        self,
-    },
-    pollster::{
-        self,
-    },
+    pollster::{self},
+    std::{borrow::Cow, default::Default, num::{NonZeroU32, NonZeroU64}},
+    wgpu::{self},
 };
 
 // Interface to handle wgpu internals
@@ -34,10 +27,9 @@ impl Handler {
                 .await
                 .unwrap();
 
-            let encoder = device
-                .create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
+            let encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor::default());
 
-            let handler = Self { 
+            let handler = Self {
                 adapter,
                 device,
                 encoder,
@@ -45,38 +37,59 @@ impl Handler {
             };
 
             Ok(handler)
-        }) 
+        })
     }
 
-    pub fn load_module(&self, module: Cow<'_, str>) -> Result<(wgpu::ShaderModule, wgpu::ComputePipeline), wgpu::Error> { 
-        let module = self.device
+    pub fn load_module(
+        &self,
+        module: Cow<'_, str>,
+    ) -> Result<(wgpu::ShaderModule, wgpu::ComputePipeline), wgpu::Error> {
+        let module = self
+            .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
                 label: None,
                 source: wgpu::ShaderSource::Wgsl(module),
             });
 
-        let pipeline = self.device
+        let pipeline = self
+            .device
             .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: None,
                 layout: None,
                 module: &module,
                 entry_point: "main",
             });
-        
+
         Ok((module, pipeline))
     }
 }
 
 pub struct BufferEntry<'a> {
+    buffer: wgpu::Buffer,
     binding: wgpu::BindGroupEntry<'a>,
     layout: wgpu::BindGroupLayoutEntry,
-    buffer: wgpu::Buffer,
 }
 
 impl BufferEntry<'_> {
-    // Returns Self
-    /*pub fn bind<T, const N: usize>(container: &[T; N]) -> Self { 
-    }*/
+    pub fn bind<T, const N: usize>(content: &[T; N], index: u32) -> Self {
+        BufferEntry {
+            buffer: None, // placeholder
+            binding: wgpu::BindGroupEntry {
+                binding: index,
+                resource: wgpu::BindingResource::Buffer(), // placeholder
+            },
+            layout: wgpu::BindGroupLayoutEntry {
+                binding: index,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType,
+                    has_dynamic_offset: false,
+                    min_binding_size: NonZeroU64::new(1),
+                },
+                count: NonZeroU32::new(1), 
+            },
+        }
+    }
 
     pub fn free() {}
 }

@@ -1,13 +1,10 @@
-// High level user API, exposed as it acts as the toolkit itself
+// High level user API, exposed as it acts as the int inintiweqweqewqewqeqtoolkit itself
 
-use {
-    std::{
-        fmt,
-        ops,
-    }
-};
+use std::{fmt, ops, sync::atomic::{AtomicU32, Ordering}};
 
 use super::interface::*;
+
+static COUNTER: AtomicU32 = AtomicU32::new(u32::MAX);
 
 #[derive(Debug)]
 pub enum TensorRank {
@@ -33,13 +30,13 @@ impl fmt::Display for TensorRank {
         match self {
             TensorRank::Scalar => {
                 write!(f, "Tensor has implied shape.")
-            },
+            }
             TensorRank::Vector(x) => {
                 write!(f, "Tensor has shape ({})", x)
-            },
+            }
             TensorRank::Matrix(x, y) => {
                 write!(f, "Tensor has shape ({}, {})", x, y)
-            },
+            }
             TensorRank::Cube(x, y, z) => {
                 write!(f, "Tensor has shape ({}, {}, {})", x, y, z)
             }
@@ -48,56 +45,79 @@ impl fmt::Display for TensorRank {
 }
 
 pub struct Tensor<T: Element, const N: usize> {
-    pub _tensor: [T; N],
+    _tensor: [T; N],
+    _index: u32,
+
     pub rank: TensorRank,
 }
 
 impl<T: Element, const N: usize> Tensor<T, N> {
-
     pub fn from_array(_tensor: [T; N], rank: TensorRank) -> Self {
         Self {
             _tensor,
+            _index: COUNTER.fetch_sub(1, Ordering::SeqCst),
             rank,
         }
     }
-    
 
     pub fn cast(&self) {}
 
-    pub fn _resize(&self) {}
+    fn _prepare(&self) -> Bundle {
+        let bundle = Bundle::bind()
+    }
+
+    fn _resize(&self) {}
 }
 
-// vec! yoink ez 
+macro_rules! impl_ops {
+    ( $ ( $trait:ident $fn:ident )*, ) => {
+        $ (
+            impl<T: Element, const N: usize> ops::$trait for Tensor<T, N> {
+                type Output = Tensor<T, N>;
+
+                fn $fn(&self, rhs: &Tensor<T, N>) -> Output {
+                    let (lb, rb) = (self._prepare(), rhs._prepare());
+                }
+            }
+        )*
+    };   
+}
+
+impl_ops! {
+    Add add,
+}
+
+// vec! yoink ez
 #[macro_export]
 macro_rules! tsr {
-    
+
     () => {};
 
     ( $root:literal $ (, $next:literal )* $(,)? ) => {
-        { 
+        {
             let _tensor = [
                 $root $ (
                     , $next
                 )*
             ];
-            
+
             let rank = TensorRank::Vector(_tensor.len() as u64);
-            
+
             Tensor {
-                _tensor, 
+                _tensor,
                 rank,
             }
         }
-            
+
     };
 
-    ( $ ( [ $root:literal $ (, $next:literal)* ] $(,)? )*  ) => { 
+    ( $ ( [ $root:literal $ (, $next:literal)* ] $(,)? )*  ) => {
         {
             let (mut x, mut y) = (1, 0);
             let mut depth = true;
             let _tensor = [
                 $ (
-                    {   
+                    {
                         y = y + 1;
 
                         if y > 1 {
@@ -105,9 +125,9 @@ macro_rules! tsr {
                         }
 
                         $root
-                    }, 
+                    },
                     $ (
-                        {   
+                        {
                             if depth {
                                 x = x + 1;
                             }
@@ -119,7 +139,7 @@ macro_rules! tsr {
             ];
 
             let rank = TensorRank::Matrix(x as u64, y as u64);
-            
+
             Tensor {
                 _tensor,
                 rank,
