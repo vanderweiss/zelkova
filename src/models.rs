@@ -1,4 +1,4 @@
-// High level user API, exposed as it acts as the int inintiweqweqewqewqeqtoolkit itself
+// High level user API, exposed as it acts as the toolkit itself
 
 use std::{fmt, ops, sync::atomic::{AtomicU32, Ordering}};
 
