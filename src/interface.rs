@@ -54,7 +54,7 @@ pub struct Node<'a> {
 
 // GPU memory layout in respect to Bundle containers
 pub struct Layout<'a> {
-    mapping: HashMap<u16, Node<'a>>,
+    mapping: HashMap<u32, Node<'a>>,
 }
 
 impl Layout<'_> {

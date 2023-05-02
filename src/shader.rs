@@ -91,7 +91,7 @@ impl BufferEntry<'_> {
         }
     }
 
-    pub fn free() {}
+    pub fn free(&self) {}
 }
 
 pub struct ComputeContext<'a> {
