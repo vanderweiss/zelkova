@@ -1,6 +1,9 @@
 // High level user API, exposed as it acts as the toolkit itself
 
-use std::{fmt, ops, sync::atomic::{AtomicU32, Ordering}};
+use std::{
+    fmt, ops,
+    sync::atomic::{AtomicU32, Ordering},
+};
 
 use super::interface::*;
 
@@ -63,7 +66,7 @@ impl<T: Element, const N: usize> Tensor<T, N> {
     pub fn cast(&self) {}
 
     fn _prepare(&self) -> Bundle {
-        let bundle = Bundle::bind()
+        let bundle = Bundle::bind();
     }
 
     fn _resize(&self) {}
@@ -80,7 +83,7 @@ macro_rules! impl_ops {
                 }
             }
         )*
-    };   
+    };
 }
 
 impl_ops! {

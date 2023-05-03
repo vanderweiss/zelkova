@@ -2,7 +2,11 @@
 
 use {
     pollster::{self},
-    std::{borrow::Cow, default::Default, num::{NonZeroU32, NonZeroU64}},
+    std::{
+        borrow::Cow,
+        default::Default,
+        num::{NonZeroU32, NonZeroU64},
+    },
     wgpu::{self},
 };
 
@@ -86,7 +90,7 @@ impl BufferEntry<'_> {
                     has_dynamic_offset: false,
                     min_binding_size: NonZeroU64::new(1),
                 },
-                count: NonZeroU32::new(1), 
+                count: NonZeroU32::new(1),
             },
         }
     }
