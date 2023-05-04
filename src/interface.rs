@@ -41,20 +41,9 @@ impl Bundle<'_> {
     }
 }
 
-pub enum NodePosition {
-    Head,
-    Body,
-    Tail,
-}
-
-pub struct Node<'a> {
-    bundle: Bundle<'a>,
-    position: NodePosition,
-}
-
 // GPU memory layout in respect to Bundle containers
 pub struct Layout<'a> {
-    mapping: HashMap<u32, Node<'a>>,
+    mapping: HashMap<u32, Bundle<'a>>,
 }
 
 impl Layout<'_> {
