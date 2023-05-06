@@ -119,7 +119,12 @@ impl BufferEntry<'_> {
         (entry, handler)
     }
 
-    pub fn free(&self) {}
+    pub fn free(&self) -> Result<wgpu::Buffer, wgpu::Error> {
+        // Gets dropped later as a means of confirmation
+        drop(self.buffer.slice(..).get_mapped_range());
+
+        Ok(self.buffer)
+    }
 }
 
 pub struct ComputeContext<'a> {

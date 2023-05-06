@@ -70,6 +70,7 @@ impl<T: Element, const N: usize> Tensor<T, N> {
     fn _resize(&self) {}
 }
 
+/* WIP
 macro_rules! impl_ops {
     ( $ ( $trait:ident $fn:ident )*, ) => {
         $ (
@@ -77,16 +78,18 @@ macro_rules! impl_ops {
                 type Output = Tensor<T, N>;
 
                 fn $fn(&self, rhs: &Tensor<T, N>) -> Output {
-                    //let (lb, rb) = (self._prepare(), rhs._prepare());
+                    let (lb, rb) = (self._prepare(), rhs._prepare());
                 }
             }
         )*
     };
 }
 
+
 impl_ops! {
     Add add,
 }
+*/
 
 // vec! yoink ez
 #[macro_export]
