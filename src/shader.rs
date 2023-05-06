@@ -1,13 +1,14 @@
 // Main abstraction layer between wgpu and the low level user API
 
 use {
-    pollster::{self},
+    bytemuck,
+    pollster,
     std::{
-        borrow::Cow,
+        borrow::Cow
         default::Default,
         num::{NonZeroU32, NonZeroU64},
     },
-    wgpu::{self},
+    wgpu,
 };
 
 // Interface to handle wgpu internals
@@ -66,6 +67,18 @@ impl Handler {
 
         Ok((module, pipeline))
     }
+
+    pub fn alloc_init_buffer(&self, format: &[u32]) -> Result<wgpu::Buffer, wgpu::Error> {
+        let buffer = self.device.create_buffer(&wgpu::util::BufferInitDescriptor {
+            label: None,
+            contents: bytemuck::cast_slice(format),
+            usage: wgpu::BufferUsages::MAP_READ,
+        });
+
+        Ok(buffer)
+    }
+
+    pub fn alloc_uninit_buffer(&self) {}
 }
 
 pub struct BufferEntry<'a> {
@@ -75,13 +88,18 @@ pub struct BufferEntry<'a> {
 }
 
 impl BufferEntry<'_> {
-    pub fn bind<T, const N: usize>(content: &[T; N], index: u32) -> Self {
-        BufferEntry {
-            buffer: None, // placeholder
+    pub fn bind<T, const N: usize>(content: &[T; N], index: u32) -> (Self, Handler) {
+        static handler: Handler =
+            Handler::request().expect("Failed to stablish connection with gpu");
+
+        let buffer = handler.alloc_init_buffer(content as &[u32])?;
+        
+        let entry = Self {
+            buffer,
             binding: wgpu::BindGroupEntry {
                 binding: index,
-                resource: wgpu::BindingResource::Buffer(), // placeholder
-            },
+                resource: buffer.as_entire_binding(),
+            }),
             layout: wgpu::BindGroupLayoutEntry {
                 binding: index,
                 visibility: wgpu::ShaderStages::COMPUTE,
@@ -92,7 +110,9 @@ impl BufferEntry<'_> {
                 },
                 count: NonZeroU32::new(1),
             },
-        }
+        };
+
+        (entry, handler)
     }
 
     pub fn free(&self) {}

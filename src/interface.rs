@@ -27,16 +27,16 @@ impl_element! {
 }
 
 // Buffers associated with toolkit models, contiguous arrays mostly
-pub struct Bundle<'a> {
-    binded: bool,
+pub struct Bundle<'a> 
     link: BufferEntry<'a>,
+    active: bool,
 }
 
 impl Bundle<'_> {
     pub fn bind<T: Element, const N: usize>(content: &[T; N], id: u32) -> Self {
         Self {
-            binded: true,
             link: BufferEntry::bind(content, id),
+            active: true,
         }
     }
 }

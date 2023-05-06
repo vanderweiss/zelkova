@@ -65,9 +65,7 @@ impl<T: Element, const N: usize> Tensor<T, N> {
 
     pub fn cast(&self) {}
 
-    fn _prepare(&self) -> Bundle {
-        let bundle = Bundle::bind();
-    }
+    fn _prepare(&self) {}
 
     fn _resize(&self) {}
 }
@@ -79,7 +77,7 @@ macro_rules! impl_ops {
                 type Output = Tensor<T, N>;
 
                 fn $fn(&self, rhs: &Tensor<T, N>) -> Output {
-                    let (lb, rb) = (self._prepare(), rhs._prepare());
+                    //let (lb, rb) = (self._prepare(), rhs._prepare());
                 }
             }
         )*
