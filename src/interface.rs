@@ -28,14 +28,17 @@ impl_element! {
 
 // Buffers associated with toolkit models, contiguous arrays mostly
 pub struct Bundle<'a> {
+    handler: &'static Handler,
     link: BufferEntry<'a>,
     active: bool,
 }
 
 impl Bundle<'_> {
     pub fn bind<T: Element, const N: usize>(content: &[T; N], id: u32) -> Self {
+        let (link, ref handler) = BufferEntry::bind(content, id);
         Self {
-            link: BufferEntry::bind(content, id),
+            handler,
+            link,
             active: true,
         }
     }
