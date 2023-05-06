@@ -27,7 +27,7 @@ impl_element! {
 }
 
 // Buffers associated with toolkit models, contiguous arrays mostly
-pub struct Bundle<'a> 
+pub struct Bundle<'a> {
     link: BufferEntry<'a>,
     active: bool,
 }
