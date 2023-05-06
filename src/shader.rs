@@ -1,14 +1,14 @@
 // Main abstraction layer between wgpu and the low level user API
 
 use {
-    bytemuck,
     pollster,
     std::{
-        borrow::Cow
+        borrow::Cow,
         default::Default,
+        mem,
         num::{NonZeroU32, NonZeroU64},
     },
-    wgpu,
+    wgpu::{self, util::DeviceExt},
 };
 
 // Interface to handle wgpu internals
@@ -68,12 +68,14 @@ impl Handler {
         Ok((module, pipeline))
     }
 
-    pub fn alloc_init_buffer(&self, format: &[u32]) -> Result<wgpu::Buffer, wgpu::Error> {
-        let buffer = self.device.create_buffer(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: bytemuck::cast_slice(format),
-            usage: wgpu::BufferUsages::MAP_READ,
-        });
+    pub fn alloc_buffer_init(&self, contents: &[u8]) -> Result<wgpu::Buffer, wgpu::Error> {
+        let buffer = self
+            .device
+            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents,
+                usage: wgpu::BufferUsages::MAP_READ,
+            });
 
         Ok(buffer)
     }
@@ -92,19 +94,21 @@ impl BufferEntry<'_> {
         static handler: Handler =
             Handler::request().expect("Failed to stablish connection with gpu");
 
-        let buffer = handler.alloc_init_buffer(content as &[u32])?;
-        
+        let buffer = handler
+            .alloc_buffer_init(unsafe { mem::transmute::<&[T], &[u8]>(content) })
+            .unwrap();
+
         let entry = Self {
             buffer,
             binding: wgpu::BindGroupEntry {
                 binding: index,
                 resource: buffer.as_entire_binding(),
-            }),
+            },
             layout: wgpu::BindGroupLayoutEntry {
                 binding: index,
                 visibility: wgpu::ShaderStages::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType,
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
                     has_dynamic_offset: false,
                     min_binding_size: NonZeroU64::new(1),
                 },
