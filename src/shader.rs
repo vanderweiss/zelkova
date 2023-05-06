@@ -110,7 +110,7 @@ impl BufferEntry<'_> {
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Storage { read_only: true },
                     has_dynamic_offset: false,
-                    min_binding_size: NonZeroU64::new(1),
+                    min_binding_size: NonZeroU64::new(buffer.size()),
                 },
                 count: NonZeroU32::new(1),
             },
