@@ -1,4 +1,4 @@
-#![feature(cell_update)]
+#![feature(once_cell)]
 
 pub mod interface;
 pub mod models;

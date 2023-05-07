@@ -1,6 +1,7 @@
 // Main abstraction layer between wgpu and the low level user API
 
 use {
+    once_cell::sync::OnceCell,
     pollster,
     std::{
         borrow::Cow,
@@ -90,19 +91,23 @@ pub struct BufferEntry<'a> {
 }
 
 impl BufferEntry<'_> {
-    pub fn bind<T, const N: usize>(content: &[T; N], index: u32) -> (Self, Handler) {
-        static handler: Handler =
-            Handler::request().expect("Failed to stablish connection with gpu");
+    pub fn bind<T, const N: usize>(content: &[T; N], index: u32) -> (Self, &Handler) {
+        static _handler: OnceCell<Handler> = OnceCell::new();
+
+        let ref handler =
+            _handler.get_or_init(|| Handler::request().expect("Failed to retrieve GPU device."));
 
         let buffer = handler
             .alloc_buffer_init(unsafe { mem::transmute::<&[T], &[u8]>(content) })
             .unwrap();
 
+        let resource = buffer.as_entire_binding().clone();
+
         let entry = Self {
             buffer,
             binding: wgpu::BindGroupEntry {
                 binding: index,
-                resource: buffer.as_entire_binding(),
+                resource,
             },
             layout: wgpu::BindGroupLayoutEntry {
                 binding: index,
@@ -119,11 +124,9 @@ impl BufferEntry<'_> {
         (entry, handler)
     }
 
-    pub fn free(&self) -> Result<wgpu::Buffer, wgpu::Error> {
+    pub fn free(&self) {
         // Gets dropped later as a means of confirmation
-        drop(self.buffer.slice(..).get_mapped_range());
-
-        Ok(self.buffer)
+        //drop(self.buffer.slice(..).get_mapped_range());
     }
 }
 
