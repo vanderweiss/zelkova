@@ -1,13 +1,13 @@
 // Main abstraction layer between wgpu and the low level user API
 
 use {
-    once_cell::sync::OnceCell,
     pollster,
     std::{
         borrow::Cow,
         default::Default,
         mem,
         num::{NonZeroU32, NonZeroU64},
+        sync::LazyLock,
     },
     wgpu::{self, util::DeviceExt},
 };
@@ -91,11 +91,9 @@ pub struct BufferEntry<'a> {
 }
 
 impl BufferEntry<'_> {
-    pub fn bind<T, const N: usize>(content: &[T; N], index: u32) -> (Self, &Handler) {
-        static _handler: OnceCell<Handler> = OnceCell::new();
-
-        let ref handler =
-            _handler.get_or_init(|| Handler::request().expect("Failed to retrieve GPU device."));
+    pub fn bind<T, const N: usize>(content: &[T; N], index: u32) -> Result<Self, wgpu::Error> {
+        static handler: LazyLock<Handler> =
+            LazyLock::new(|| Handler::request().expect("Failed to connect to GPU"));
 
         let buffer = handler
             .alloc_buffer_init(unsafe { mem::transmute::<&[T], &[u8]>(content) })
@@ -121,7 +119,7 @@ impl BufferEntry<'_> {
             },
         };
 
-        (entry, handler)
+        Ok(entry)
     }
 
     pub fn free(&self) {
