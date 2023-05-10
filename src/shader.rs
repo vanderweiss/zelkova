@@ -12,7 +12,7 @@ use {
     wgpu::{self, util::DeviceExt},
 };
 
-// Interface to handle wgpu internals
+// Core interface to handle wgpu internals
 pub struct Handler {
     adapter: wgpu::Adapter,
     device: wgpu::Device,
@@ -27,6 +27,11 @@ impl Handler {
                 .request_adapter(&wgpu::RequestAdapterOptions::default())
                 .await
                 .unwrap();
+
+            // known issue with Lavapipe
+            if adapter.get_info().vendor == 0x10005 {
+                panic!()
+            }
 
             let (device, queue) = adapter
                 .request_device(&wgpu::DeviceDescriptor::default(), None)
