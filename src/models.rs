@@ -5,11 +5,11 @@ use std::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
-use super::interface::*;
+use super::shader::Component;
 
-static TRACKER: AtomicU32 = AtomicU32::new(u32::MAX);
+static TRACKER: AtomicU32 = AtomicU32::new(0);
 
-#[derive(Debug)]
+#[derive(PartialEq, Eq, Debug)]
 pub enum TensorRank {
     Scalar,
     Vector(u64),
@@ -49,37 +49,37 @@ impl fmt::Display for TensorRank {
     }
 }
 
-pub struct Tensor<T: Element, const N: usize> {
-    _tensor: [T; N],
-    _index: u32,
+pub struct Tensor<C: Component, const N: usize> {
+    pub _tensor: [C; N],
+    pub _index: u32,
 
     pub rank: TensorRank,
 }
 
-impl<T: Element, const N: usize> Tensor<T, N> {
-    pub fn from_array(_tensor: [T; N], rank: TensorRank) -> Self {
+impl<C: Component, const N: usize> Tensor<C, N> {
+    pub fn _prepare() {}
+
+    pub fn raw(_tensor: [C; N], rank: TensorRank) -> Self {
+        let _index: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
+
         Self {
             _tensor,
-            _index: COUNTER.fetch_sub(1, Ordering::SeqCst),
+            _index,
             rank,
         }
     }
 
     pub fn cast(&self) {}
-
-    fn _prepare(&self) {}
-
-    fn _resize(&self) {}
 }
 
 /* WIP
 macro_rules! impl_ops {
     ( $ ( $trait:ident $fn:ident )*, ) => {
         $ (
-            impl<T: Element, const N: usize> ops::$trait for Tensor<T, N> {
-                type Output = Tensor<T, N>;
+            impl<C: Component, const N: usize> ops::$trait for Tensor<C, N> {
+                type Output = Tensor<C, N>;
 
-                fn $fn(&self, rhs: &Tensor<T, N>) -> Output {
+                fn $fn(&self, rhs: &Tensor<C, N>) -> Output {
                     let (lb, rb) = (self._prepare(), rhs._prepare());
                 }
             }
@@ -93,26 +93,19 @@ impl_ops! {
 }
 */
 
-// vec! but tensor, limited to third rank
+// vec! but tensor, limited to second rank
 #[macro_export]
 macro_rules! tsr {
-
-    () => {};
 
     ( $root:literal $ (, $next:literal )* $(,)? ) => {
         {
             let _tensor = [
-                $root $ (
-                    , $next
-                )*
+                $root $ (, $next )*
             ];
 
             let rank = TensorRank::Vector(_tensor.len() as u64);
 
-            Tensor {
-                _tensor,
-                rank,
-            }
+            Tensor::raw(_tensor, raw)
         }
 
     };
@@ -124,20 +117,13 @@ macro_rules! tsr {
             let _tensor = [
                 $ (
                     {
-                        y = y + 1;
-
-                        if y > 1 {
-                            depth = false;
-                        }
-
+                        y += 1;
+                        if y > 1 { depth = !depth; }
                         $root
                     },
                     $ (
                         {
-                            if depth {
-                                x = x + 1;
-                            }
-
+                            depth.then(|| x += 1);
                             $next
                         },
                     )*
@@ -146,10 +132,7 @@ macro_rules! tsr {
 
             let rank = TensorRank::Matrix(x as u64, y as u64);
 
-            Tensor {
-                _tensor,
-                rank,
-            }
+            Tensor::raw(_tensor, rank)
         }
     };
 

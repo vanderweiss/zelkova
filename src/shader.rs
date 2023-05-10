@@ -1,16 +1,39 @@
 // Main abstraction layer between wgpu and the low level user API
 
 use {
+    bytemuck::{self, NoUninit},
     pollster,
     std::{
         borrow::Cow,
         default::Default,
-        mem,
         num::{NonZeroU32, NonZeroU64},
         sync::LazyLock,
     },
     wgpu::{self, util::DeviceExt},
 };
+
+mod _sealed {
+    pub trait Sealed {}
+}
+
+pub trait Component: _sealed::Sealed + NoUninit {}
+
+macro_rules! impl_component {
+    ($($ident:ident)*) => {$(
+        impl Component for $ident {}
+        impl _sealed::Sealed for $ident {}
+    )*}
+}
+
+// Valid types to operate on buffers
+impl_component! {
+    u16 u32 u64
+    i16 i32 i64
+    f32 f64
+}
+
+pub type _Bty = u8; // Buffer conversion - from primitive slices
+pub type _Tty = u32; // Tracker type - layout util
 
 // Core interface to handle wgpu internals
 pub struct Handler {
@@ -81,7 +104,7 @@ impl Handler {
         Ok((module, pipeline))
     }
 
-    pub fn alloc_buffer_init(&self, contents: &[u8]) -> Result<wgpu::Buffer, wgpu::Error> {
+    pub fn alloc_buffer_init(&self, contents: &[_Bty]) -> Result<wgpu::Buffer, wgpu::Error> {
         let buffer = self
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -96,34 +119,51 @@ impl Handler {
     pub fn alloc_uninit_buffer(&self) {}
 }
 
-pub struct BufferEntry<'a> {
-    binding: wgpu::BindGroupEntry<'a>,
+pub struct BufferEntry {
+    buffer: wgpu::Buffer,
     layout: wgpu::BindGroupLayoutEntry,
+    index: _Tty,
 }
 
-impl BufferEntry<'_> {
-    pub fn bind<T, const N: usize>(content: &[T; N], index: u32) -> Result<Self, wgpu::Error> {
-        let buffer = Handler::request()?
-            .alloc_buffer_init(unsafe { mem::transmute::<&[T], &[u8]>(content) })?;
+impl BufferEntry {
+    pub fn bind<C: Component, const N: usize>(
+        content: &[C],
+        index: _Tty,
+    ) -> Result<Self, wgpu::Error> {
+        let buffer =
+            Handler::request()?.alloc_buffer_init(bytemuck::cast_slice::<C, _Bty>(content))?;
+
+        let min_binding_size = NonZeroU64::new(buffer.size());
 
         let entry = Self {
-            binding: wgpu::BindGroupEntry {
-                binding: index,
-                resource: buffer.as_entire_binding().clone(),
-            },
+            buffer,
             layout: wgpu::BindGroupLayoutEntry {
                 binding: index,
                 visibility: wgpu::ShaderStages::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Storage { read_only: true },
                     has_dynamic_offset: false,
-                    min_binding_size: NonZeroU64::new(buffer.size()),
+                    min_binding_size,
                 },
-                count: NonZeroU32::new(1),
+                count: NonZeroU32::new(N as u32),
             },
+            index,
         };
 
         Ok(entry)
+    }
+
+    pub fn in_group(&self) -> Result<wgpu::BindGroupEntry, wgpu::Error> {
+        let location = wgpu::BindGroupEntry {
+            binding: self.index,
+            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
+                buffer: &self.buffer,
+                offset: self.buffer.size(),
+                size: None, // entire buffer
+            }),
+        };
+
+        Ok(location)
     }
 
     pub fn free(&self) {
