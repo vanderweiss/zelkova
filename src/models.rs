@@ -7,7 +7,7 @@ use std::{
 
 use super::interface::*;
 
-static COUNTER: AtomicU32 = AtomicU32::new(u32::MAX);
+static TRACKER: AtomicU32 = AtomicU32::new(u32::MAX);
 
 #[derive(Debug)]
 pub enum TensorRank {
@@ -18,6 +18,7 @@ pub enum TensorRank {
 }
 
 impl TensorRank {
+    #[inline]
     pub fn size(&self) -> u64 {
         match self {
             TensorRank::Scalar => 1,
@@ -29,6 +30,7 @@ impl TensorRank {
 }
 
 impl fmt::Display for TensorRank {
+    #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TensorRank::Scalar => {
@@ -91,7 +93,7 @@ impl_ops! {
 }
 */
 
-// vec! yoink ez
+// vec! but tensor, limited to third rank
 #[macro_export]
 macro_rules! tsr {
 
