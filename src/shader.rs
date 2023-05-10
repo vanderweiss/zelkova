@@ -21,7 +21,7 @@ pub struct Handler {
 }
 
 impl Handler {
-    pub fn request() -> Result<Self, wgpu::Error> {
+    fn _request() -> Result<Self, wgpu::Error> {
         pollster::block_on(async move {
             let adapter = wgpu::Instance::default()
                 .request_adapter(&wgpu::RequestAdapterOptions::default())
@@ -44,6 +44,13 @@ impl Handler {
 
             Ok(handler)
         })
+    }
+
+    pub fn request() -> Result<&'static Self, wgpu::Error> {
+        static _handler: LazyLock<Handler> =
+            LazyLock::new(|| Handler::_request().expect("Failed to connect to GPU"));
+
+        Ok(&_handler)
     }
 
     pub fn load_module(
@@ -85,27 +92,19 @@ impl Handler {
 }
 
 pub struct BufferEntry<'a> {
-    buffer: wgpu::Buffer,
     binding: wgpu::BindGroupEntry<'a>,
     layout: wgpu::BindGroupLayoutEntry,
 }
 
 impl BufferEntry<'_> {
     pub fn bind<T, const N: usize>(content: &[T; N], index: u32) -> Result<Self, wgpu::Error> {
-        static handler: LazyLock<Handler> =
-            LazyLock::new(|| Handler::request().expect("Failed to connect to GPU"));
-
-        let buffer = handler
-            .alloc_buffer_init(unsafe { mem::transmute::<&[T], &[u8]>(content) })
-            .unwrap();
-
-        let resource = buffer.as_entire_binding().clone();
+        let buffer = Handler::request()?
+            .alloc_buffer_init(unsafe { mem::transmute::<&[T], &[u8]>(content) })?;
 
         let entry = Self {
-            buffer,
             binding: wgpu::BindGroupEntry {
                 binding: index,
-                resource,
+                resource: buffer.as_entire_binding().clone(),
             },
             layout: wgpu::BindGroupLayoutEntry {
                 binding: index,

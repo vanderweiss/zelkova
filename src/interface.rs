@@ -65,7 +65,6 @@ impl Layout<'_> {
 
 // Container for lazy execution
 pub struct OperationContext<'a> {
-    governor: &'static Governor<'static>,
     relative: ComputeContext<'a>,
 }
 
@@ -74,34 +73,4 @@ impl OperationContext<'_> {
     pub fn pack() {}
     // Returns Node
     pub fn process(&self) {}
-}
-
-// Soon
-pub struct GovernorOptions {
-    local_modules: Option<&'static str>,
-}
-
-impl Default for GovernorOptions {
-    fn default() -> Self {
-        Self {
-            local_modules: Some("/"),
-        }
-    }
-}
-
-// Middlepoint for any calls between users and wgpu
-pub struct Governor<'a> {
-    handler: Handler,
-    layout: Layout<'a>,
-    options: GovernorOptions,
-}
-
-impl Governor<'_> {
-    pub fn new(options: Option<GovernorOptions>) -> Self {
-        Self {
-            handler: Handler::request().unwrap(),
-            layout: Layout::create(),
-            options: options.unwrap_or_default(),
-        }
-    }
 }
