@@ -30,7 +30,7 @@ impl Handler {
 
             // known issue with Lavapipe
             if adapter.get_info().vendor == 0x10005 {
-                panic!()
+                panic!();
             }
 
             let (device, queue) = adapter
