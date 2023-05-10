@@ -59,6 +59,7 @@ pub struct Tensor<C: Component, const N: usize> {
 impl<C: Component, const N: usize> Tensor<C, N> {
     pub fn _prepare() {}
 
+    #[inline]
     pub fn raw(_tensor: [C; N], rank: TensorRank) -> Self {
         let _index: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
 
