@@ -32,8 +32,9 @@ impl_component! {
     f32 f64
 }
 
-pub type _Bty = u8; // Buffer conversion - from primitive slices
+pub type _Bty = u8; // Buffer type - from primitive slices
 pub type _Tty = u32; // Tracker type - layout util
+pub type _Pty = u64; // Position type - set boundaries
 
 // Core interface to handle wgpu internals
 pub struct Handler {

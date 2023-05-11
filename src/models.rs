@@ -10,39 +10,49 @@ use super::shader::Component;
 static TRACKER: AtomicU32 = AtomicU32::new(0);
 
 #[derive(PartialEq, Eq, Debug)]
-pub enum TensorRank {
+pub enum TensorOrder {
     Scalar,
     Vector(u64),
     Matrix(u64, u64),
     Cube(u64, u64, u64),
 }
 
-impl TensorRank {
+impl TensorOrder {
     #[inline]
     pub fn size(&self) -> u64 {
         match self {
-            TensorRank::Scalar => 1,
-            TensorRank::Vector(x) => x * 1,
-            TensorRank::Matrix(x, y) => x * y,
-            TensorRank::Cube(x, y, z) => x * y * z,
+            Self::Scalar => 1,
+            Self::Vector(x) => x * 1,
+            Self::Matrix(x, y) => x * y,
+            Self::Cube(x, y, z) => x * y * z,
+        }
+    }
+
+    #[inline]
+    pub fn square(&self) -> bool {
+        match self {
+            Self::Scalar => false,
+            Self::Vector(_) => false,
+            Self::Matrix(x, y) => x == y,
+            Self::Cube(x, y, z) => (x == y) && (y == z),
         }
     }
 }
 
-impl fmt::Display for TensorRank {
+impl fmt::Display for TensorOrder {
     #[inline]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TensorRank::Scalar => {
+            Self::Scalar => {
                 write!(f, "Tensor has implied shape.")
             }
-            TensorRank::Vector(x) => {
+            Self::Vector(x) => {
                 write!(f, "Tensor has shape ({})", x)
             }
-            TensorRank::Matrix(x, y) => {
+            Self::Matrix(x, y) => {
                 write!(f, "Tensor has shape ({}, {})", x, y)
             }
-            TensorRank::Cube(x, y, z) => {
+            Self::Cube(x, y, z) => {
                 write!(f, "Tensor has shape ({}, {}, {})", x, y, z)
             }
         }
@@ -53,24 +63,29 @@ pub struct Tensor<C: Component, const N: usize> {
     pub _tensor: [C; N],
     pub _index: u32,
 
-    pub rank: TensorRank,
+    pub order: TensorOrder,
 }
 
 impl<C: Component, const N: usize> Tensor<C, N> {
-    pub fn _prepare() {}
+    pub fn _prepare(&mut self) {}
 
     #[inline]
-    pub fn raw(_tensor: [C; N], rank: TensorRank) -> Self {
+    pub fn raw(_tensor: [C; N], order: TensorOrder) -> Self {
         let _index: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
 
         Self {
             _tensor,
             _index,
-            rank,
+            order,
         }
     }
 
-    pub fn cast(&self) {}
+    pub fn cast<T: Component>(&mut self) {}
+
+    // hyperdeterminant for 3D+
+    pub fn determinant(&self) {}
+
+    pub fn inverse(&self) {}
 }
 
 /* WIP
@@ -104,7 +119,7 @@ macro_rules! tsr {
                 $root $ (, $next )*
             ];
 
-            let rank = TensorRank::Vector(_tensor.len() as u64);
+            let order = TensorOrder::Vector(_tensor.len() as u64);
 
             Tensor::raw(_tensor, raw)
         }
@@ -131,9 +146,9 @@ macro_rules! tsr {
                 )*
             ];
 
-            let rank = TensorRank::Matrix(x as u64, y as u64);
+            let order = TensorOrder::Matrix(x as u64, y as u64);
 
-            Tensor::raw(_tensor, rank)
+            Tensor::raw(_tensor, order)
         }
     };
 
