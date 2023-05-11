@@ -67,7 +67,7 @@ pub struct Tensor<C: Component, const N: usize> {
 }
 
 impl<C: Component, const N: usize> Tensor<C, N> {
-    pub fn _prepare(&mut self) {}
+    fn _prepare(&mut self) {}
 
     #[inline]
     pub fn raw(_tensor: [C; N], order: TensorOrder) -> Self {
