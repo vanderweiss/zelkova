@@ -5,7 +5,6 @@ use {
     pollster,
     std::{
         borrow::Cow,
-        default::Default,
         num::{NonZeroU32, NonZeroU64},
         sync::LazyLock,
     },
@@ -45,6 +44,7 @@ pub struct Handler {
 }
 
 impl Handler {
+    #[must_use]
     fn _request() -> Result<Self, wgpu::Error> {
         pollster::block_on(async move {
             let adapter = wgpu::Instance::default()
@@ -75,6 +75,8 @@ impl Handler {
         })
     }
 
+    #[allow(non_upper_case_globals)]
+    #[must_use]
     pub fn request() -> Result<&'static Self, wgpu::Error> {
         static _handler: LazyLock<Handler> =
             LazyLock::new(|| Handler::_request().expect("Failed to connect to GPU"));
@@ -109,7 +111,7 @@ impl Handler {
         let buffer = self
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: None,
+                label: Some("Zelkova owned buffer."),
                 contents,
                 usage: wgpu::BufferUsages::MAP_READ,
             });
@@ -121,8 +123,8 @@ impl Handler {
 }
 
 pub struct BufferEntry {
-    buffer: wgpu::Buffer,
     layout: wgpu::BindGroupLayoutEntry,
+    buffer: wgpu::Buffer,
     index: _Tty,
 }
 
@@ -134,42 +136,34 @@ impl BufferEntry {
         let buffer =
             Handler::request()?.alloc_buffer_init(bytemuck::cast_slice::<C, _Bty>(content))?;
 
-        let min_binding_size = NonZeroU64::new(buffer.size());
-
         let entry = Self {
-            buffer,
             layout: wgpu::BindGroupLayoutEntry {
                 binding: index,
                 visibility: wgpu::ShaderStages::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Storage { read_only: true },
                     has_dynamic_offset: false,
-                    min_binding_size,
+                    min_binding_size: NonZeroU64::new(buffer.size()),
                 },
                 count: NonZeroU32::new(N as u32),
             },
+            buffer,
             index,
         };
 
         Ok(entry)
     }
 
-    pub fn in_group(&self) -> Result<wgpu::BindGroupEntry, wgpu::Error> {
-        let location = wgpu::BindGroupEntry {
+    pub fn pull(&self) -> Result<wgpu::BindGroupEntry, wgpu::Error> {
+        let binding = wgpu::BindGroupEntry {
             binding: self.index,
-            resource: wgpu::BindingResource::Buffer(wgpu::BufferBinding {
-                buffer: &self.buffer,
-                offset: self.buffer.size(),
-                size: None, // entire buffer
-            }),
+            resource: self.buffer.as_entire_binding(),
         };
-
-        Ok(location)
+        Ok(binding)
     }
 
     pub fn free(&self) {
-        // Gets dropped later as a means of confirmation
-        //drop(self.buffer.slice(..).get_mapped_range());
+        drop(self.buffer.slice(..).get_mapped_range());
     }
 }
 

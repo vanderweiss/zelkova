@@ -5,7 +5,7 @@ use std::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
-use super::shader::Component;
+use super::{interface::Bundle, shader::Component};
 
 static TRACKER: AtomicU32 = AtomicU32::new(0);
 
@@ -67,7 +67,7 @@ pub struct Tensor<C: Component, const N: usize> {
 }
 
 impl<C: Component, const N: usize> Tensor<C, N> {
-    fn _prepare(&mut self) {}
+    fn _prepare(&self) -> Bundle {}
 
     #[inline]
     pub fn raw(_tensor: [C; N], order: TensorOrder) -> Self {
@@ -86,6 +86,14 @@ impl<C: Component, const N: usize> Tensor<C, N> {
     pub fn determinant(&self) {}
 
     pub fn inverse(&self) {}
+}
+
+impl<C: Component, const N: usize> ops::Add for Tensor<C, N> {
+    type Output = Tensor<C, N>;
+
+    fn add(self, other: Tensor<C, N>) -> Self::Output {
+        let (rhs, lhs) = (self._prepare(), other._prepare());
+    }
 }
 
 /* WIP
