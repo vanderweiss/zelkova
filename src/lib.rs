@@ -1,5 +1,5 @@
 #![feature(once_cell)]
 
-pub mod interface;
+pub(crate) mod api;
+pub(crate) mod codegen;
 pub mod models;
-pub mod shader;

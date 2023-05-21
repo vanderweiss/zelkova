@@ -2,7 +2,7 @@
 
 use std::collections::HashMap;
 
-use super::shader::*;
+use crate::codegen::{BufferEntry, Component, ComputeContext};
 
 // Buffers associated with toolkit models, contiguous arrays mostly
 pub struct Bundle {

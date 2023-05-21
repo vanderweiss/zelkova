@@ -5,7 +5,7 @@ use std::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
-use super::{interface::Bundle, shader::Component};
+use crate::{api::Bundle, codegen::Component};
 
 static TRACKER: AtomicU32 = AtomicU32::new(0);
 
