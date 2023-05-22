@@ -11,11 +11,13 @@ use {
     wgpu::{self, util::DeviceExt},
 };
 
+use super::{_Bty, _Tty};
+
 mod _sealed {
     pub trait Sealed {}
 }
 
-pub trait Component: _sealed::Sealed + NoUninit {}
+pub(crate) trait Component: _sealed::Sealed + NoUninit {}
 
 macro_rules! impl_component {
     ($($ident:ident)*) => {$(
@@ -31,12 +33,8 @@ impl_component! {
     f32 f64
 }
 
-pub type _Bty = u8; // Buffer type - from primitive slices
-pub type _Tty = u32; // Tracker type - layout util
-pub type _Pty = u64; // Position type - set boundaries
-
 // Core interface to handle wgpu internals
-pub struct Handler {
+pub(crate) struct Handler {
     adapter: wgpu::Adapter,
     device: wgpu::Device,
     encoder: wgpu::CommandEncoder,
@@ -122,7 +120,7 @@ impl Handler {
     pub fn alloc_uninit_buffer(&self) {}
 }
 
-pub struct BufferEntry {
+pub(crate) struct BufferEntry {
     layout: wgpu::BindGroupLayoutEntry,
     buffer: wgpu::Buffer,
     index: _Tty,
@@ -167,7 +165,7 @@ impl BufferEntry {
     }
 }
 
-pub struct ComputeContext<'a> {
+pub(crate) struct ComputeContext<'a> {
     bindgroup: wgpu::BindGroup,
     pass: wgpu::ComputePass<'a>,
     pipeline: wgpu::ComputePipeline,

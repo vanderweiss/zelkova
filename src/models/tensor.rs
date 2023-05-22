@@ -5,7 +5,10 @@ use std::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
-use crate::{api::Bundle, codegen::Component};
+use crate::{
+    api::Bundle,
+    codegen::{Component, _Tty},
+};
 
 static TRACKER: AtomicU32 = AtomicU32::new(0);
 
@@ -61,7 +64,7 @@ impl fmt::Display for TensorOrder {
 
 pub struct Tensor<C: Component, const N: usize> {
     pub _tensor: [C; N],
-    pub _index: u32,
+    pub _index: _Tty,
 
     pub order: TensorOrder,
 }
@@ -74,7 +77,7 @@ impl<C: Component, const N: usize> Tensor<C, N> {
 
     #[inline]
     pub fn raw(_tensor: [C; N], order: TensorOrder) -> Self {
-        let _index: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
+        let _index: _Tty = TRACKER.fetch_add(1, Ordering::SeqCst);
 
         Self {
             _tensor,

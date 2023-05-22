@@ -49,6 +49,7 @@ impl Layout {
 
     pub fn init() {}
 
+    #[inline]
     pub fn insert(&mut self, bundle: Bundle, index: _Tty) -> &Bundle {
         &self.mapping.insert(index, bundle).unwrap()
     }
@@ -65,7 +66,7 @@ impl Layout {
 }
 
 // Container for lazy execution
-pub struct OperationContext<'a> {
+pub(crate) struct OperationContext<'a> {
     relative: ComputeContext<'a>,
 }
 
