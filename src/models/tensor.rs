@@ -67,7 +67,10 @@ pub struct Tensor<C: Component, const N: usize> {
 }
 
 impl<C: Component, const N: usize> Tensor<C, N> {
-    fn _prepare(&self) -> Bundle {}
+    #[inline]
+    fn _prepare(&self) -> &Bundle {
+        Bundle::bind(&self._tensor, self._index).unwrap()
+    }
 
     #[inline]
     pub fn raw(_tensor: [C; N], order: TensorOrder) -> Self {

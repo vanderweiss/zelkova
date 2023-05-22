@@ -1,36 +1,56 @@
 // Low level user API behind the toolkit
 
-use std::collections::HashMap;
+use {std::collections::HashMap, wgpu};
 
-use crate::codegen::{BufferEntry, Component, ComputeContext};
+use crate::codegen::{BufferEntry, Component, ComputeContext, _Tty};
 
 // Buffers associated with toolkit models, contiguous arrays mostly
-pub struct Bundle {
+pub(crate) struct Bundle {
+    layout: &'static mut Layout,
     entry: BufferEntry,
     valid: bool,
 }
 
 impl Bundle {
-    pub fn bind<C: Component, const N: usize>(content: &[C; N], index: u32) -> Self {
+    pub fn bind<C: Component, const N: usize>(
+        content: &[C; N],
+        index: _Tty,
+    ) -> Result<&mut Self, wgpu::Error> {
         static mut layout: Layout = Layout::arrange();
-        let bundle = Self {
-            entry: BufferEntry::bind::<_, N>(content, index).unwrap(),
-            valid: false,
+
+        let ref mut bundle = unsafe {
+            layout.insert(
+                Self {
+                    layout: &mut layout,
+                    entry: BufferEntry::bind::<_, N>(content, index)?,
+                    valid: false,
+                },
+                index,
+            )
         };
-        bundle
+
+        Ok(bundle)
     }
 }
 
 // GPU memory layout in respect to Bundle containers
-pub struct Layout<'a> {
-    mapping: HashMap<u32, &'a Bundle>,
+struct Layout {
+    mapping: HashMap<_Tty, Bundle>,
 }
 
-impl Layout<'_> {
+impl Layout {
+    #[must_use]
+    #[inline]
     pub fn arrange() -> Self {
         Self {
             mapping: HashMap::new(),
         }
+    }
+
+    pub fn init() {}
+
+    pub fn insert(&mut self, bundle: Bundle, index: _Tty) -> &Bundle {
+        &self.mapping.insert(index, bundle).unwrap()
     }
 
     /*pub fn schedule<T: Element, const N: usize>(&self, container: [T; N]) -> Bundle {
