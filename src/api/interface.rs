@@ -67,19 +67,19 @@ impl Layout {
 
 // Container for lazy execution
 pub(crate) struct OperationMap<'a> {
-    bundles: Vec<Bundle>,
+    bundles: Vec<&'a Bundle>,
     context: Option<ComputeContext<'a>>,
 }
 
 impl OperationMap<'_> {
     pub fn create() -> Self {
         Self {
-            bundles: Vec::<Bundle>::new(),
+            bundles: Vec::<&Bundle>::new(),
             context: None,
         }
     }
 
-    pub fn include(&mut self, bundle: Bundle) -> &mut Self {
+    pub fn include(&mut self, bundle: &Bundle) -> &mut Self {
         match self.context {
             None => self.bundles.push(bundle),
             Some(_) => panic!(),
