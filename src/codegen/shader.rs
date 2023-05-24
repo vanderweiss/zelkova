@@ -12,8 +12,6 @@ use {
     wgpu::{self, util::DeviceExt},
 };
 
-use super::{_Bty, _Tty};
-
 mod _sealed {
     pub trait Sealed {}
 }
@@ -114,7 +112,7 @@ impl Handler {
         Ok((module, pipeline))
     }
 
-    pub fn alloc_buffer_init(&self, contents: &[_Bty]) -> Result<wgpu::Buffer, wgpu::Error> {
+    pub fn alloc_buffer_init(&self, contents: &[u8]) -> Result<wgpu::Buffer, wgpu::Error> {
         let buffer = self
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -151,20 +149,19 @@ impl Handler {
 pub(crate) struct BufferEntry {
     layout: wgpu::BindGroupLayoutEntry,
     buffer: wgpu::Buffer,
-    index: _Tty,
 }
 
 impl BufferEntry {
     pub fn bind<C: Component, const N: usize>(
         content: &[C],
-        index: _Tty,
+        binding: u32,
     ) -> Result<Self, wgpu::Error> {
         let buffer =
             Handler::request()?.alloc_buffer_init(bytemuck::cast_slice::<C, _Bty>(content))?;
 
         let entry = Self {
             layout: wgpu::BindGroupLayoutEntry {
-                binding: index,
+                binding,
                 visibility: wgpu::ShaderStages::COMPUTE,
                 ty: wgpu::BindingType::Buffer {
                     ty: wgpu::BufferBindingType::Storage { read_only: true },
@@ -174,7 +171,6 @@ impl BufferEntry {
                 count: NonZeroU32::new(N as u32),
             },
             buffer,
-            index,
         };
 
         Ok(entry)
@@ -182,7 +178,7 @@ impl BufferEntry {
 
     pub fn pull(&self) -> Result<wgpu::BindGroupEntry, wgpu::Error> {
         let binding = wgpu::BindGroupEntry {
-            binding: self.index,
+            binding: self.layout.binding,
             resource: self.buffer.as_entire_binding(),
         };
         Ok(binding)

@@ -2,7 +2,7 @@
 
 use {std::collections::HashMap, wgpu};
 
-use crate::codegen::{BufferEntry, Component, ComputeContext, _Tty};
+use crate::codegen::{BufferEntry, Component, ComputeContext};
 
 // Buffers associated with toolkit models, contiguous arrays mostly
 pub(crate) struct Bundle {
@@ -14,7 +14,7 @@ pub(crate) struct Bundle {
 impl Bundle {
     pub fn bind<C: Component, const N: usize>(
         content: &[C; N],
-        index: _Tty,
+        index: u32,
     ) -> Result<&mut Self, wgpu::Error> {
         static mut layout: Layout = Layout::arrange();
 
@@ -35,7 +35,7 @@ impl Bundle {
 
 // GPU memory layout in respect to Bundle containers
 struct Layout {
-    mapping: HashMap<_Tty, Bundle>,
+    mapping: HashMap<u32, Bundle>,
 }
 
 impl Layout {
@@ -50,7 +50,7 @@ impl Layout {
     pub fn init() {}
 
     #[inline]
-    pub fn insert(&mut self, bundle: Bundle, index: _Tty) -> &Bundle {
+    pub fn insert(&mut self, bundle: Bundle, index: u32) -> &Bundle {
         &self.mapping.insert(index, bundle).unwrap()
     }
 
