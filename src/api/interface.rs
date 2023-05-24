@@ -66,13 +66,26 @@ impl Layout {
 }
 
 // Container for lazy execution
-pub(crate) struct OperationContext<'a> {
-    relative: ComputeContext<'a>,
+pub(crate) struct OperationMap<'a> {
+    bundles: Vec<Bundle>,
+    context: Option<ComputeContext<'a>>,
 }
 
-impl OperationContext<'_> {
-    // Returns Self
-    pub fn pack() {}
-    // Returns Node
+impl OperationMap<'_> {
+    pub fn create() -> Self {
+        Self {
+            bundles: Vec::<Bundle>::new(),
+            context: None,
+        }
+    }
+
+    pub fn include(&mut self, bundle: Bundle) -> &mut Self {
+        match self.context {
+            None => self.bundles.push(bundle),
+            Some(_) => panic!(),
+        };
+        self
+    }
+
     pub fn process(&self) {}
 }

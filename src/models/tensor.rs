@@ -94,34 +94,22 @@ impl<C: Component, const N: usize> Tensor<C, N> {
     pub fn inverse(&self) {}
 }
 
-impl<C: Component, const N: usize> ops::Add for Tensor<C, N> {
-    type Output = Tensor<C, N>;
-
-    fn add(self, other: Tensor<C, N>) -> Self::Output {
-        let (rhs, lhs) = (self._prepare(), other._prepare());
-    }
-}
-
-/* WIP
 macro_rules! impl_ops {
     ( $ ( $trait:ident $fn:ident )*, ) => {
         $ (
             impl<C: Component, const N: usize> ops::$trait for Tensor<C, N> {
                 type Output = Tensor<C, N>;
 
-                fn $fn(&self, rhs: &Tensor<C, N>) -> Output {
-                    let (lb, rb) = (self._prepare(), rhs._prepare());
+                fn $fn(self, rhs: Tensor<C, N>) -> Self::Output {
                 }
             }
         )*
     };
 }
 
-
 impl_ops! {
     Add add,
 }
-*/
 
 // vec! but tensor, limited to second rank
 #[macro_export]

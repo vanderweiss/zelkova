@@ -6,6 +6,7 @@ use {
     std::{
         borrow::Cow,
         num::{NonZeroU32, NonZeroU64},
+        string::ToString,
         sync::LazyLock,
     },
     wgpu::{self, util::DeviceExt},
@@ -31,6 +32,14 @@ impl_component! {
     u16 u32 u64
     i16 i32 i64
     f32 f64
+}
+
+pub(crate) struct Owned;
+
+impl Owned {
+    pub fn from(resource: impl ToString) -> Option<&'static str> {
+        Some(format!("Zelkova owned {}.", resource.to_string()).as_str())
+    }
 }
 
 // Core interface to handle wgpu internals
@@ -89,14 +98,14 @@ impl Handler {
         let module = self
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: None,
+                label: Owned::from("module"),
                 source: wgpu::ShaderSource::Wgsl(module),
             });
 
         let pipeline = self
             .device
             .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                label: None,
+                label: Owned::from("pipeline"),
                 layout: None,
                 module: &module,
                 entry_point: "main",
@@ -109,7 +118,7 @@ impl Handler {
         let buffer = self
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Some("Zelkova owned buffer."),
+                label: Owned::from("buffer"),
                 contents,
                 usage: wgpu::BufferUsages::MAP_READ,
             });
@@ -118,6 +127,25 @@ impl Handler {
     }
 
     pub fn alloc_uninit_buffer(&self) {}
+
+    pub fn join(
+        &self,
+        entrs: &[wgpu::BindGroupEntry],
+        lentrs: &[wgpu::BindGroupLayoutEntry],
+    ) -> Result<wgpu::BindGroup, wgpu::Error> {
+        let group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Owned::from("bind group"),
+            layout: &self
+                .device
+                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+                    label: Owned::from("bind group layout"),
+                    entries: lentrs,
+                }),
+            entries: entrs,
+        });
+
+        Ok(group)
+    }
 }
 
 pub(crate) struct BufferEntry {
@@ -174,6 +202,6 @@ pub(crate) struct ComputeContext<'a> {
 impl ComputeContext<'_> {
     // Wrapper around a compute shader and its components
     // pub fn pack(encoder: wgpu::CommandEncoder, pipeline: wgpu::ComputePipeline) -> Result<Self, wgpu::Error> {}
-
+    pub fn pack() {}
     pub fn run(&self) {}
 }
