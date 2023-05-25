@@ -12,20 +12,17 @@ pub(crate) struct Bundle {
 }
 
 impl Bundle {
-    pub fn bind<C: Component, const N: usize>(
-        content: &[C; N],
-        index: u32,
-    ) -> Result<&mut Self, wgpu::Error> {
+    pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<&mut Self, wgpu::Error> {
         static mut layout: Layout = Layout::arrange();
 
         let ref mut bundle = unsafe {
             layout.insert(
                 Self {
                     layout: &mut layout,
-                    entry: BufferEntry::bind::<_, N>(content, index)?,
+                    entry: BufferEntry::bind::<_>(content, binding)?,
                     valid: false,
                 },
-                index,
+                binding,
             )
         };
 
@@ -39,7 +36,6 @@ struct Layout {
 }
 
 impl Layout {
-    #[must_use]
     #[inline]
     pub fn arrange() -> Self {
         Self {
@@ -47,31 +43,24 @@ impl Layout {
         }
     }
 
-    pub fn init() {}
-
     #[inline]
-    pub fn insert(&mut self, bundle: Bundle, index: u32) -> &Bundle {
-        &self.mapping.insert(index, bundle).unwrap()
+    pub fn insert(&mut self, bundle: Bundle, binding: u32) -> &Bundle {
+        &self.mapping.insert(binding, bundle).unwrap()
     }
 
-    /*pub fn schedule<T: Element, const N: usize>(&self, container: [T; N]) -> Bundle {
-
-    let entry = BufferEntry::bind(&container);
-
-        Bundle {
-            binded: true,
-            link: entry,
-        }
-    }*/
+    pub fn recycle(&self) {}
 }
 
+// State saver for nodes and traversal on evaluation
+pub(crate) struct OperationTree;
+
 // Container for lazy execution
-pub(crate) struct OperationMap<'a> {
+pub(crate) struct OperationNode<'a> {
     bundles: Vec<&'a Bundle>,
     context: Option<ComputeContext<'a>>,
 }
 
-impl OperationMap<'_> {
+impl OperationNode<'_> {
     pub fn create() -> Self {
         Self {
             bundles: Vec::<&Bundle>::new(),

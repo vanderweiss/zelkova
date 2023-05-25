@@ -3,12 +3,7 @@
 use {
     bytemuck::{self, NoUninit},
     pollster,
-    std::{
-        borrow::Cow,
-        num::{NonZeroU32, NonZeroU64},
-        string::ToString,
-        sync::LazyLock,
-    },
+    std::{borrow::Cow, num::NonZeroU32, string::ToString, sync::LazyLock},
     wgpu::{self, util::DeviceExt},
 };
 
@@ -147,43 +142,50 @@ impl Handler {
 }
 
 pub(crate) struct BufferEntry {
-    layout: wgpu::BindGroupLayoutEntry,
     buffer: wgpu::Buffer,
+    binding: u32,
 }
 
 impl BufferEntry {
-    pub fn bind<C: Component, const N: usize>(
-        content: &[C],
-        binding: u32,
-    ) -> Result<Self, wgpu::Error> {
+    pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<Self, wgpu::Error> {
         let buffer =
-            Handler::request()?.alloc_buffer_init(bytemuck::cast_slice::<C, _Bty>(content))?;
+            Handler::request()?.alloc_buffer_init(bytemuck::cast_slice::<C, u8>(content))?;
 
-        let entry = Self {
-            layout: wgpu::BindGroupLayoutEntry {
-                binding,
-                visibility: wgpu::ShaderStages::COMPUTE,
-                ty: wgpu::BindingType::Buffer {
-                    ty: wgpu::BufferBindingType::Storage { read_only: true },
-                    has_dynamic_offset: false,
-                    min_binding_size: NonZeroU64::new(buffer.size()),
-                },
-                count: NonZeroU32::new(N as u32),
-            },
-            buffer,
-        };
+        let entry = Self { buffer, binding };
 
         Ok(entry)
     }
 
-    pub fn pull(&self) -> Result<wgpu::BindGroupEntry, wgpu::Error> {
-        let binding = wgpu::BindGroupEntry {
-            binding: self.layout.binding,
+    pub fn group(&self) -> Result<wgpu::BindGroupEntry, wgpu::Error> {
+        let _group = wgpu::BindGroupEntry {
+            binding: self.binding,
             resource: self.buffer.as_entire_binding(),
         };
-        Ok(binding)
+
+        Ok(_group)
     }
 
+    pub fn layout(&self) -> Result<wgpu::BindGroupLayoutEntry, wgpu::Error> {
+        let _layout = wgpu::BindGroupLayoutEntry {
+            binding: self.binding,
+            visibility: wgpu::ShaderStages::COMPUTE,
+            ty: wgpu::BindingType::Buffer {
+                ty: wgpu::BufferBindingType::Storage { read_only: true },
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            count: None,
+        };
+
+        Ok(_layout)
+    }
+
+    #[inline]
+    pub fn id(&self) -> wgpu::Id {
+        self.buffer.global_id()
+    }
+
+    #[inline]
     pub fn free(&self) {
         drop(self.buffer.slice(..).get_mapped_range());
     }

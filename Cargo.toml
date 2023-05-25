@@ -6,4 +6,4 @@ edition = "2021"
 [dependencies]
 bytemuck = { version = "1.13.1", default-features = false }
 pollster = { version = "0.3.0", default-features = false }
-wgpu = { version = "0.15.1", default-features = false, features = ["wgsl"] }
+wgpu = { version = "0.15.1", default-features = false, features = ["expose-ids", "wgsl"] }
