@@ -1,4 +1,4 @@
-# zelkova - lightweight and extremely fast ML toolkit
+# zelkova - ML toolkit
 gpu moment
 
 checklist: 
