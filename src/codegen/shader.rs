@@ -3,7 +3,7 @@
 use {
     bytemuck::{self, NoUninit},
     pollster,
-    std::{borrow::Cow, num::NonZeroU32, string::ToString, sync::LazyLock},
+    std::{borrow::Cow, string::ToString, sync::LazyLock},
     wgpu::{self, util::DeviceExt},
 };
 
@@ -123,8 +123,8 @@ impl Handler {
 
     pub fn join(
         &self,
-        entrs: &[wgpu::BindGroupEntry],
-        lentrs: &[wgpu::BindGroupLayoutEntry],
+        entries: &[wgpu::BindGroupEntry],
+        meta: &[wgpu::BindGroupLayoutEntry],
     ) -> Result<wgpu::BindGroup, wgpu::Error> {
         let group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Owned::from("bind group"),
@@ -132,9 +132,9 @@ impl Handler {
                 .device
                 .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
                     label: Owned::from("bind group layout"),
-                    entries: lentrs,
+                    entries: meta,
                 }),
-            entries: entrs,
+            entries,
         });
 
         Ok(group)
@@ -193,13 +193,35 @@ impl BufferEntry {
 
 pub(crate) struct ComputeContext<'a> {
     bindgroup: wgpu::BindGroup,
+    module: wgpu::ShaderModule,
     pass: wgpu::ComputePass<'a>,
     pipeline: wgpu::ComputePipeline,
 }
 
 impl ComputeContext<'_> {
-    // Wrapper around a compute shader and its components
+    // Wrapper around a compute shader and its components, shader language module should be ready by this point
     // pub fn pack(encoder: wgpu::CommandEncoder, pipeline: wgpu::ComputePipeline) -> Result<Self, wgpu::Error> {}
-    pub fn pack() {}
+    pub fn pack(bindgroup: wgpu::BindGroup, _module: Cow<'_, str>) -> Result<Self, wgpu::Error> {
+        let handler = Handler::request()?;
+
+        let (module, pipeline) = handler
+            .load_module(_module)
+            .expect("Processed corrupt module.");
+
+        let pass = handler
+            .encoder
+            .begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Owned::from("compute pass"),
+            });
+
+        let context = Self {
+            bindgroup,
+            module,
+            pass,
+            pipeline,
+        };
+
+        Ok(context)
+    }
     pub fn run(&self) {}
 }

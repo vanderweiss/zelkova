@@ -52,29 +52,45 @@ impl Layout {
 }
 
 // State saver for nodes and traversal on evaluation
-pub(crate) struct OperationTree;
-
-// Container for lazy execution
-pub(crate) struct OperationNode<'a> {
-    bundles: Vec<&'a Bundle>,
+pub(crate) struct OperationTree<'a> {
+    nodes: Vec<OperationNode<'a>>,
     context: Option<ComputeContext<'a>>,
 }
 
-impl OperationNode<'_> {
+impl OperationTree<'_> {
+    #[inline]
     pub fn create() -> Self {
         Self {
-            bundles: Vec::<&Bundle>::new(),
+            nodes: Vec::<OperationNode>::new(),
             context: None,
         }
     }
 
+    pub fn process(&self) {}
+}
+
+// Container for lazy execution
+pub(crate) struct OperationNode<'a> {
+    bundles: Vec<&'a Bundle>,
+    parent: Option<OperationTree<'a>>,
+}
+
+impl OperationNode<'_> {
+    #[inline]
+    pub fn create() -> Self {
+        Self {
+            bundles: Vec::<&Bundle>::new(),
+            parent: None,
+        }
+    }
+
     pub fn include(&mut self, bundle: &Bundle) -> &mut Self {
-        match self.context {
+        match self.parent {
             None => self.bundles.push(bundle),
             Some(_) => panic!(),
         };
         self
     }
 
-    pub fn process(&self) {}
+    pub fn init(&mut self, parent: OperationTree) {}
 }

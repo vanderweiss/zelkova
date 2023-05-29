@@ -61,7 +61,7 @@ impl fmt::Display for TensorOrder {
 
 pub struct Tensor<C: Component, const N: usize> {
     pub _tensor: [C; N],
-    pub _index: u32,
+    pub _binding: u32,
 
     pub order: TensorOrder,
 }
@@ -69,16 +69,16 @@ pub struct Tensor<C: Component, const N: usize> {
 impl<C: Component, const N: usize> Tensor<C, N> {
     #[inline]
     fn _prepare(&self) -> &Bundle {
-        Bundle::bind(&self._tensor, self._index).unwrap()
+        Bundle::bind(&self._tensor, self._binding).unwrap()
     }
 
     #[inline]
     pub fn raw(_tensor: [C; N], order: TensorOrder) -> Self {
-        let _index: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
+        let _binding: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
 
         Self {
             _tensor,
-            _index,
+            _binding,
             order,
         }
     }
