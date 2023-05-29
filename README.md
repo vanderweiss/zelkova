@@ -1,4 +1,4 @@
-# zelkova
+# zelkova - ML toolkit
 gpu moment
 
 checklist: 
