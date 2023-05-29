@@ -9,6 +9,38 @@ use crate::{api::Bundle, codegen::Component};
 
 static TRACKER: AtomicU32 = AtomicU32::new(0);
 
+pub struct Tensor<C: Component, const N: usize> {
+    pub _tensor: [C; N],
+    pub _binding: u32,
+
+    pub order: TensorOrder,
+}
+
+impl<C: Component, const N: usize> Tensor<C, N> {
+    #[inline]
+    fn _prepare(&self) -> &Bundle {
+        Bundle::bind(&self._tensor, self._binding).unwrap()
+    }
+
+    #[inline]
+    pub fn raw(_tensor: [C; N], order: TensorOrder) -> Self {
+        let _binding: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
+
+        Self {
+            _tensor,
+            _binding,
+            order,
+        }
+    }
+
+    pub fn cast<T: Component>(&mut self) {}
+
+    // hyperdeterminant for 3D+
+    pub fn determinant(&self) {}
+
+    pub fn inverse(&self) {}
+}
+
 #[derive(PartialEq, Eq, Debug)]
 pub enum TensorOrder {
     Scalar,
@@ -59,45 +91,14 @@ impl fmt::Display for TensorOrder {
     }
 }
 
-pub struct Tensor<C: Component, const N: usize> {
-    pub _tensor: [C; N],
-    pub _binding: u32,
-
-    pub order: TensorOrder,
-}
-
-impl<C: Component, const N: usize> Tensor<C, N> {
-    #[inline]
-    fn _prepare(&self) -> &Bundle {
-        Bundle::bind(&self._tensor, self._binding).unwrap()
-    }
-
-    #[inline]
-    pub fn raw(_tensor: [C; N], order: TensorOrder) -> Self {
-        let _binding: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
-
-        Self {
-            _tensor,
-            _binding,
-            order,
-        }
-    }
-
-    pub fn cast<T: Component>(&mut self) {}
-
-    // hyperdeterminant for 3D+
-    pub fn determinant(&self) {}
-
-    pub fn inverse(&self) {}
-}
-
 macro_rules! impl_ops {
-    ( $ ( $trait:ident $fn:ident )*, ) => {
+    ( $ ( $trait:ident $fn:ident, )* ) => {
         $ (
             impl<C: Component, const N: usize> ops::$trait for Tensor<C, N> {
                 type Output = Tensor<C, N>;
 
-                fn $fn(self, rhs: Tensor<C, N>) -> Self::Output {
+                fn $fn(self, other: Tensor<C, N>) -> Self::Output {
+                    other
                 }
             }
         )*
@@ -106,6 +107,9 @@ macro_rules! impl_ops {
 
 impl_ops! {
     Add add,
+    Sub sub,
+    Mul mul,
+    Div div,
 }
 
 // vec! but tensor, limited to second rank
@@ -114,9 +118,7 @@ macro_rules! tsr {
 
     ( $root:literal $ (, $next:literal )* $(,)? ) => {
         {
-            let _tensor = [
-                $root $ (, $next )*
-            ];
+            let _tensor = [$root $ (, $next )*];
 
             let order = TensorOrder::Vector(_tensor.len() as u64);
 
