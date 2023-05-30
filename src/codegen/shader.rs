@@ -30,6 +30,7 @@ impl_component! {
 pub(crate) struct Owned;
 
 impl Owned {
+    #[inline]
     pub fn from(resource: impl ToString) -> Option<&'static str> {
         Some(format!("Zelkova owned {}.", resource.to_string()).as_str())
     }
@@ -82,6 +83,17 @@ impl Handler {
             LazyLock::new(|| Handler::_request().expect("Failed to connect to GPU"));
 
         Ok(&_handler)
+    }
+
+    #[inline]
+    pub fn start_pass(&mut self) -> Result<wgpu::ComputePass, wgpu::Error> {
+        let pass = self
+            .encoder
+            .begin_compute_pass(&wgpu::ComputePassDescriptor {
+                label: Owned::from("compute pass"),
+            });
+
+        Ok(pass)
     }
 
     pub fn load_module(
@@ -208,11 +220,7 @@ impl ComputeContext<'_> {
             .load_module(_module)
             .expect("Processed corrupt module.");
 
-        let pass = handler
-            .encoder
-            .begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Owned::from("compute pass"),
-            });
+        let pass = handler.start_pass()?;
 
         let context = Self {
             bindgroup,
