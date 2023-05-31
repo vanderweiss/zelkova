@@ -1,9 +1,9 @@
-// Main abstraction layer between wgpu and the low level user API
+// Main abstraction layer between wgpu and toolkit essentials
 
 use {
     bytemuck::{self, NoUninit},
     pollster,
-    std::{borrow::Cow, string::ToString, sync::LazyLock},
+    std::{borrow::Cow, sync::LazyLock},
     wgpu::{self, util::DeviceExt},
 };
 
@@ -14,9 +14,9 @@ mod _sealed {
 pub(crate) trait Component: _sealed::Sealed + NoUninit {}
 
 macro_rules! impl_component {
-    ($($ident:ident)*) => {$(
-        impl Component for $ident {}
-        impl _sealed::Sealed for $ident {}
+    ($($ty:ident)*) => {$(
+        impl Component for $ty {}
+        impl _sealed::Sealed for $ty {}
     )*}
 }
 
@@ -27,14 +27,33 @@ impl_component! {
     f32 f64
 }
 
-pub(crate) struct Owned;
-
-impl Owned {
-    #[inline]
-    pub fn from(resource: impl ToString) -> Option<&'static str> {
-        Some(format!("Zelkova owned {}.", resource.to_string()).as_str())
-    }
+/* Still unsure whether to keep this or not
+pub(crate) trait Resource: _sealed::Sealed {
+    fn label() -> Label<'static>;
 }
+
+macro_rules! impl_resource {
+    ($($resource:ident, $alias:literal)*) => {$(
+        impl Resource for wgpu::$resource {
+            fn label() -> Label<'static> {
+                Some("Zelkova owned $alias.")
+            }
+        }
+        impl _sealed::Sealed for wgpu::$resource {}
+    )*}
+}
+
+impl_resource! {
+    Buffer, "buffer"
+    CommandEncoder, "command encoder"
+    ComputePipeline, "compute pipeline"
+}
+
+*/
+
+// Global label for wgpu models instantiation
+#[allow(non_upper_case_globals)]
+static label: Option<&'static str> = Some("Zelkova owned resource");
 
 // Core interface to handle wgpu internals
 pub(crate) struct Handler {
@@ -89,9 +108,7 @@ impl Handler {
     pub fn start_pass(&mut self) -> Result<wgpu::ComputePass, wgpu::Error> {
         let pass = self
             .encoder
-            .begin_compute_pass(&wgpu::ComputePassDescriptor {
-                label: Owned::from("compute pass"),
-            });
+            .begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
 
         Ok(pass)
     }
@@ -103,14 +120,14 @@ impl Handler {
         let module = self
             .device
             .create_shader_module(wgpu::ShaderModuleDescriptor {
-                label: Owned::from("module"),
+                label,
                 source: wgpu::ShaderSource::Wgsl(module),
             });
 
         let pipeline = self
             .device
             .create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                label: Owned::from("pipeline"),
+                label,
                 layout: None,
                 module: &module,
                 entry_point: "main",
@@ -123,7 +140,7 @@ impl Handler {
         let buffer = self
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                label: Owned::from("buffer"),
+                label,
                 contents,
                 usage: wgpu::BufferUsages::MAP_READ,
             });
@@ -139,11 +156,11 @@ impl Handler {
         meta: &[wgpu::BindGroupLayoutEntry],
     ) -> Result<wgpu::BindGroup, wgpu::Error> {
         let group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label: Owned::from("bind group"),
+            label,
             layout: &self
                 .device
                 .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    label: Owned::from("bind group layout"),
+                    label,
                     entries: meta,
                 }),
             entries,
@@ -153,12 +170,12 @@ impl Handler {
     }
 }
 
-pub(crate) struct BufferEntry {
+pub(crate) struct Buffer {
     buffer: wgpu::Buffer,
     binding: u32,
 }
 
-impl BufferEntry {
+impl Buffer {
     pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<Self, wgpu::Error> {
         let buffer =
             Handler::request()?.alloc_buffer_init(bytemuck::cast_slice::<C, u8>(content))?;

@@ -2,12 +2,12 @@
 
 use {std::collections::HashMap, wgpu};
 
-use crate::codegen::{BufferEntry, Component, ComputeContext};
+use crate::codegen::{Buffer, Component, ComputeContext};
 
 // Buffers associated with toolkit models, contiguous arrays mostly
 pub(crate) struct Bundle {
     layout: &'static mut Layout,
-    entry: BufferEntry,
+    buffer: Buffer,
     valid: bool,
 }
 
@@ -19,7 +19,7 @@ impl Bundle {
             layout.insert(
                 Self {
                     layout: &mut layout,
-                    entry: BufferEntry::bind::<_>(content, binding)?,
+                    buffer: Buffer::bind::<_>(content, binding)?,
                     valid: false,
                 },
                 binding,
