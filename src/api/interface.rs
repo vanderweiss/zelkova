@@ -1,63 +1,82 @@
 // Low level user API behind the toolkit
 
-use {std::collections::HashMap, wgpu};
+use {
+    std::{
+        collections::HashMap,
+        sync::{LazyLock, Mutex},
+    },
+    wgpu,
+};
 
 use crate::codegen::{Buffer, Component, ComputeContext};
 
 // Buffers associated with toolkit models, contiguous arrays mostly
 pub(crate) struct Bundle {
-    layout: &'static mut Layout,
     buffer: Buffer,
-    valid: bool,
+    state: State,
 }
 
 impl Bundle {
-    pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<&mut Self, wgpu::Error> {
-        static mut layout: Layout = Layout::arrange();
+    pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<Self, wgpu::Error> {
+        let ref mut layout = Layout::arrange();
 
-        let ref mut bundle = unsafe {
-            layout.insert(
-                Self {
-                    layout: &mut layout,
-                    buffer: Buffer::bind::<_>(content, binding)?,
-                    valid: false,
-                },
-                binding,
-            )
+        let bundle = Self {
+            buffer: Buffer::bind::<_>(content, binding)?,
+            state: State::new(),
         };
+
+        layout.insert(&bundle, binding);
 
         Ok(bundle)
     }
 }
 
-// GPU memory layout in respect to Bundle containers
-struct Layout {
-    mapping: HashMap<u32, Bundle>,
+pub(crate) struct State {
+    // protected: bool,
+    // shared: bool,
+    valid: bool,
 }
 
-impl Layout {
+impl State {
     #[inline]
-    pub fn arrange() -> Self {
+    pub fn new() -> Self {
+        Self { valid: false }
+    }
+}
+
+// GPU memory layout in respect to Bundle containers
+struct Layout<'b> {
+    mapping: HashMap<u32, &'b Bundle>,
+}
+
+impl<'b> Layout<'b> {
+    #[inline]
+    fn _arrange() -> Self {
         Self {
             mapping: HashMap::new(),
         }
     }
 
+    pub fn arrange() -> &'static Self {
+        static _layout: LazyLock<Layout> = LazyLock::new(|| Layout::_arrange());
+        &_layout
+    }
+
     #[inline]
-    pub fn insert(&mut self, bundle: Bundle, binding: u32) -> &Bundle {
-        &self.mapping.insert(binding, bundle).unwrap()
+    pub fn insert(&mut self, bundle: &'b Bundle, binding: u32) {
+        self.mapping.insert(binding, bundle).unwrap();
     }
 
     pub fn recycle(&self) {}
 }
 
 // State saver for nodes and traversal on evaluation
-pub(crate) struct OperationTree<'a> {
-    nodes: Vec<OperationNode<'a>>,
-    context: Option<ComputeContext<'a>>,
+pub(crate) struct OperationTree<'c, 't: 'c> {
+    nodes: Vec<OperationNode<'t>>,
+    context: Option<ComputeContext<'c>>,
 }
 
-impl OperationTree<'_> {
+impl<'c, 't: 'c> OperationTree<'c, 't> {
     #[inline]
     pub fn create() -> Self {
         Self {
@@ -70,27 +89,23 @@ impl OperationTree<'_> {
 }
 
 // Container for lazy execution
-pub(crate) struct OperationNode<'a> {
-    bundles: Vec<&'a Bundle>,
-    parent: Option<OperationTree<'a>>,
+pub(crate) struct OperationNode<'b> {
+    bundles: Vec<&'b Bundle>,
 }
 
-impl OperationNode<'_> {
+impl<'b> OperationNode<'b> {
     #[inline]
     pub fn create() -> Self {
         Self {
-            bundles: Vec::<&Bundle>::new(),
-            parent: None,
+            bundles: Vec::<&'b Bundle>::new(),
         }
     }
 
-    pub fn include(&mut self, bundle: &Bundle) -> &mut Self {
-        match self.parent {
+    pub fn include(mut self, bundle: &'b Bundle, context: Option<ComputeContext>) -> Self {
+        match context {
             None => self.bundles.push(bundle),
             Some(_) => panic!(),
         };
         self
     }
-
-    pub fn init(&mut self, parent: OperationTree) {}
 }
