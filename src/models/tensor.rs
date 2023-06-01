@@ -18,7 +18,7 @@ pub struct Tensor<C: Component, const N: usize> {
 
 impl<C: Component, const N: usize> Tensor<C, N> {
     #[inline]
-    fn _prepare(&self) -> Bundle {
+    fn _prepare(&self) -> &Bundle {
         Bundle::bind(&self._tensor, self._binding).unwrap()
     }
 

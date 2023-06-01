@@ -3,7 +3,11 @@
 use {
     bytemuck::{self, NoUninit},
     pollster,
-    std::{borrow::Cow, sync::LazyLock},
+    std::{
+        borrow::Cow,
+        ptr,
+        sync::{LazyLock, Mutex},
+    },
     wgpu::{self, util::DeviceExt},
 };
 
@@ -11,7 +15,7 @@ mod _sealed {
     pub trait Sealed {}
 }
 
-pub(crate) trait Component: _sealed::Sealed + NoUninit {}
+pub trait Component: _sealed::Sealed + NoUninit {}
 
 macro_rules! impl_component {
     ($($ty:ident)*) => {$(
@@ -97,11 +101,15 @@ impl Handler {
 
     #[allow(non_upper_case_globals)]
     #[must_use]
-    pub fn request() -> Result<&'static Self, wgpu::Error> {
-        static _handler: LazyLock<Handler> =
-            LazyLock::new(|| Handler::_request().expect("Failed to connect to GPU"));
+    pub fn request() -> Result<*mut Self, wgpu::Error> {
+        static _handler: LazyLock<Mutex<Handler>> =
+            LazyLock::new(|| Mutex::new(Handler::_request().expect("Failed to connect to GPU")));
 
-        Ok(&_handler)
+        Ok(_handler
+            .lock()
+            .as_deref_mut()
+            .map(|r| ptr::from_mut(r))
+            .unwrap())
     }
 
     #[inline]
@@ -177,8 +185,12 @@ pub(crate) struct Buffer {
 
 impl Buffer {
     pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<Self, wgpu::Error> {
-        let buffer =
-            Handler::request()?.alloc_buffer_init(bytemuck::cast_slice::<C, u8>(content))?;
+        let buffer = unsafe {
+            Handler::request()?
+                .as_ref()
+                .unwrap()
+                .alloc_buffer_init(bytemuck::cast_slice::<C, u8>(content))?
+        };
 
         let entry = Self { buffer, binding };
 
@@ -231,7 +243,7 @@ impl ComputeContext<'_> {
     // Wrapper around a compute shader and its components, shader language module should be ready by this point
     // pub fn pack(encoder: wgpu::CommandEncoder, pipeline: wgpu::ComputePipeline) -> Result<Self, wgpu::Error> {}
     pub fn pack(bindgroup: wgpu::BindGroup, _module: Cow<'_, str>) -> Result<Self, wgpu::Error> {
-        let handler = Handler::request()?;
+        let handler = unsafe { Handler::request()?.as_mut().unwrap() };
 
         let (module, pipeline) = handler
             .load_module(_module)

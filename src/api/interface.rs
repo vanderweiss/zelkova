@@ -3,6 +3,7 @@
 use {
     std::{
         collections::HashMap,
+        ptr,
         sync::{LazyLock, Mutex},
     },
     wgpu,
@@ -17,15 +18,18 @@ pub(crate) struct Bundle {
 }
 
 impl Bundle {
-    pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<Self, wgpu::Error> {
-        let ref mut layout = Layout::arrange();
+    pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<&Self, wgpu::Error> {
+        let layout = Layout::arrange();
 
-        let bundle = Self {
-            buffer: Buffer::bind::<_>(content, binding)?,
-            state: State::new(),
+        let bundle = unsafe {
+            (*layout).insert(
+                Self {
+                    buffer: Buffer::bind::<_>(content, binding)?,
+                    state: State::new(),
+                },
+                binding,
+            )
         };
-
-        layout.insert(&bundle, binding);
 
         Ok(bundle)
     }
@@ -45,11 +49,11 @@ impl State {
 }
 
 // GPU memory layout in respect to Bundle containers
-struct Layout<'b> {
-    mapping: HashMap<u32, &'b Bundle>,
+struct Layout {
+    mapping: HashMap<u32, Bundle>,
 }
 
-impl<'b> Layout<'b> {
+impl Layout {
     #[inline]
     fn _arrange() -> Self {
         Self {
@@ -57,14 +61,18 @@ impl<'b> Layout<'b> {
         }
     }
 
-    pub fn arrange() -> &'static Self {
-        static _layout: LazyLock<Layout> = LazyLock::new(|| Layout::_arrange());
-        &_layout
+    pub fn arrange() -> *mut Self {
+        static _layout: LazyLock<Mutex<Layout>> = LazyLock::new(|| Mutex::new(Layout::_arrange()));
+        _layout
+            .lock()
+            .as_deref_mut()
+            .map(|r| ptr::from_mut(r))
+            .unwrap()
     }
 
     #[inline]
-    pub fn insert(&mut self, bundle: &'b Bundle, binding: u32) {
-        self.mapping.insert(binding, bundle).unwrap();
+    pub unsafe fn insert(&mut self, bundle: Bundle, binding: u32) -> &Bundle {
+        self.mapping.try_insert(binding, bundle).unwrap_unchecked()
     }
 
     pub fn recycle(&self) {}

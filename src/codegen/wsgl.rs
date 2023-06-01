@@ -19,7 +19,7 @@ impl Builder {
 
     #[inline]
     pub fn wrap(&self) -> Cow<'_, str> {
-        Cow::from(self.module)
+        Cow::from(self.module.as_str())
     }
 }
 
