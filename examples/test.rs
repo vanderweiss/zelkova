@@ -1,4 +1,4 @@
-use zelkova::{tsr, Tensor};
+use zelkova::{tsr, Tensor, TensorOrder};
 
 #[allow(unused)]
 fn main() {
