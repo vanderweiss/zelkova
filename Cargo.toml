@@ -10,5 +10,4 @@ wgpu = { version = "0.15.1", default-features = false, features = ["expose-ids",
 
 [features]
 wsgl = []
-glsl = []
 spirv = []
