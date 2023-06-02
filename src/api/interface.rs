@@ -96,16 +96,23 @@ impl<'c, 't: 'c> OperationTree<'c, 't> {
     pub fn process(&self) {}
 }
 
+pub(crate) enum OperationSource {
+    Toolkit(&'static str),
+    Imported(&'static str, &'static str),
+}
+
 // Container for lazy execution
 pub(crate) struct OperationNode<'b> {
     bundles: Vec<&'b Bundle>,
+    source: OperationSource,
 }
 
 impl<'b> OperationNode<'b> {
     #[inline]
-    pub fn create() -> Self {
+    pub fn create(source: OperationSource) -> Self {
         Self {
             bundles: Vec::<&'b Bundle>::new(),
+            source,
         }
     }
 
@@ -116,4 +123,6 @@ impl<'b> OperationNode<'b> {
         };
         self
     }
+
+    pub fn process(&self) {}
 }

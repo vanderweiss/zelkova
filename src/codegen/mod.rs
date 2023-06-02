@@ -1,5 +1,5 @@
 pub(crate) mod shader;
-pub(crate) mod wsgl;
+
+pub(crate) mod backends;
 
 pub(crate) use self::shader::{Buffer, Component, ComputeContext};
-pub(crate) use self::wsgl::Builder;

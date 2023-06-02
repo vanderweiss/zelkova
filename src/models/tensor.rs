@@ -5,7 +5,10 @@ use std::{
     sync::atomic::{AtomicU32, Ordering},
 };
 
-use crate::{api::Bundle, codegen::Component};
+use crate::{
+    api::{Bundle, OperationNode, OperationSource, OperationTree},
+    codegen::Component,
+};
 
 static TRACKER: AtomicU32 = AtomicU32::new(0);
 
@@ -91,6 +94,17 @@ impl fmt::Display for TensorOrder {
     }
 }
 
+pub(crate) struct TensorFuture<'b> {
+    node: OperationNode<'b>,
+    valid: bool,
+}
+
+impl<'b> TensorFuture<'b> {
+    pub fn exc<C: Component, const N: usize>(&mut self) {
+        self.valid = true;
+    }
+}
+
 macro_rules! impl_ops {
     ( $ ( $trait:ident $fn:ident, )* ) => {
         $ (
@@ -98,6 +112,12 @@ macro_rules! impl_ops {
                 type Output = Tensor<C, N>;
 
                 fn $fn(self, other: Tensor<C, N>) -> Self::Output {
+                    let (lb, rb) = (self._prepare(), other._prepare());
+
+                    let node = OperationNode::create(OperationSource::Toolkit("$fn"))
+                        .include(lb, None)
+                        .include(rb, None);
+
                     other
                 }
             }
