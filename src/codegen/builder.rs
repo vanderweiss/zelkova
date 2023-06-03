@@ -1,9 +1,6 @@
 #![allow(unused_imports)]
 
-use std::{
-    borrow::Cow,
-    io::{Result, Write},
-};
+use std::borrow::Cow;
 
 pub(crate) struct Builder {
     module: String,
@@ -17,13 +14,14 @@ impl Builder {
         }
     }
 
+    // Generate buffer bindings
+    pub fn headers(&mut self) {}
+
+    // Format before converting to module
     #[inline]
     pub fn wrap(&self) -> Cow<'_, str> {
         Cow::from(self.module.as_str())
     }
 }
 
-pub(crate) trait Factor {}
-
-struct Expr {}
-struct Scope {}
+pub(crate) type Fragment = &'static str;

@@ -4,6 +4,7 @@
 
 pub(crate) mod api;
 pub(crate) mod codegen;
+pub(crate) mod internals;
 
 pub mod models;
 

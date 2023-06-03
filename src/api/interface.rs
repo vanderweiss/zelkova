@@ -1,6 +1,7 @@
 // Low level user API behind the toolkit
 
 use {
+    bitflags::bitflags,
     std::{
         collections::HashMap,
         ptr,
@@ -9,12 +10,11 @@ use {
     wgpu,
 };
 
-use crate::codegen::{Buffer, Component, ComputeContext};
+use crate::internals::{Buffer, Component, ComputeContext};
 
 // Buffers associated with toolkit models, contiguous arrays mostly
 pub(crate) struct Bundle {
     buffer: Buffer,
-    state: State,
 }
 
 impl Bundle {
@@ -25,7 +25,6 @@ impl Bundle {
             (*layout).insert(
                 Self {
                     buffer: Buffer::bind::<_>(content, binding)?,
-                    state: State::new(),
                 },
                 binding,
             )
@@ -34,20 +33,6 @@ impl Bundle {
         Ok(bundle)
     }
 }
-
-pub(crate) struct State {
-    // protected: bool,
-    // shared: bool,
-    valid: bool,
-}
-
-impl State {
-    #[inline]
-    pub fn new() -> Self {
-        Self { valid: false }
-    }
-}
-
 // GPU memory layout in respect to Bundle containers
 struct Layout {
     mapping: HashMap<u32, Bundle>,
@@ -105,14 +90,25 @@ pub(crate) enum OperationSource {
 pub(crate) struct OperationNode<'b> {
     bundles: Vec<&'b Bundle>,
     source: OperationSource,
+    ty: OperationType,
+}
+
+bitflags! {
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+    pub(crate) struct OperationType: u8 {
+        const Arithmetic = 0b00000001;
+        const Protected  = 0b00000010;
+        const Singular   = 0b00000100;
+    }
 }
 
 impl<'b> OperationNode<'b> {
     #[inline]
-    pub fn create(source: OperationSource) -> Self {
+    pub fn create(source: OperationSource, ty: OperationType) -> Self {
         Self {
             bundles: Vec::<&'b Bundle>::new(),
             source,
+            ty,
         }
     }
 
@@ -125,4 +121,8 @@ impl<'b> OperationNode<'b> {
     }
 
     pub fn process(&self) {}
+}
+
+pub(crate) trait OperationFuture {
+    type Packed;
 }

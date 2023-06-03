@@ -6,8 +6,8 @@ use std::{
 };
 
 use crate::{
-    api::{Bundle, OperationNode, OperationSource, OperationTree},
-    codegen::Component,
+    api::{Bundle, OperationNode, OperationSource, OperationTree, OperationType},
+    internals::Component,
 };
 
 static TRACKER: AtomicU32 = AtomicU32::new(0);
@@ -114,7 +114,10 @@ macro_rules! impl_ops {
                 fn $fn(self, other: Tensor<C, N>) -> Self::Output {
                     let (lb, rb) = (self._prepare(), other._prepare());
 
-                    let node = OperationNode::create(OperationSource::Toolkit("$fn"))
+                    let source = OperationSource::Toolkit("$fn");
+                    let ty = OperationType::default().union(OperationType::Arithmetic);
+
+                    let node = OperationNode::create(source, ty)
                         .include(lb, None)
                         .include(rb, None);
 

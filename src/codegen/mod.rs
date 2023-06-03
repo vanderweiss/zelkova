@@ -1,5 +1,7 @@
-pub(crate) mod shader;
+pub(crate) mod builder;
 
-pub(crate) mod backends;
+#[cfg(feature = "spirv")]
+pub(crate) mod spirv;
 
-pub(crate) use self::shader::{Buffer, Component, ComputeContext};
+#[cfg(feature = "wsgl")]
+pub(crate) mod wsgl;
