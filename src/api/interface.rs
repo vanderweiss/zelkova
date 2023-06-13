@@ -65,12 +65,18 @@ impl Layout {
     pub fn recycle(&self) {}
 }
 
+pub(crate) enum TreeDepth {
+    Singular,
+    Layered(u32),
+}
+
 // State saver for nodes and traversal on evaluation
 pub(crate) struct OperationTree<'c, 't: 'c, Factor>
 where
     Factor: OperationFactor,
 {
     nodes: Vec<OperationNode<'t, Factor>>,
+    // graph: placeholder
     context: Option<ComputeContext<'c>>,
 }
 
@@ -81,15 +87,22 @@ where
     #[inline]
     pub fn create() -> Self {
         Self {
-            nodes: Vec::<OperationNode<'_, Factor>>::new(),
+            nodes: Vec::<OperationNode<'t, Factor>>::new(),
             context: None,
         }
     }
 
-    pub fn process(&self) {}
+    pub fn link(&mut self, node: OperationNode<'t, Factor>) {
+        match self.context {
+            None => {}
+            Some(_) => panic!(),
+        }
+    }
+
+    pub fn traverse(&self) {}
 }
 
-pub(crate) enum OperationSource {
+pub(crate) enum ShaderSource {
     Toolkit(&'static str),
     Imported(&'static str, &'static str),
 }
@@ -107,8 +120,8 @@ pub(crate) struct OperationNode<'b, Factor>
 where
     Factor: OperationFactor,
 {
-    bundles: Vec<&'b Factor>,
-    source: OperationSource,
+    factors: Vec<&'b Factor>,
+    source: ShaderSource,
     ty: OperationType,
 }
 
@@ -116,24 +129,32 @@ impl<'b, Factor> OperationNode<'b, Factor>
 where
     Factor: OperationFactor,
 {
+    // resolving node for tree traversal
+    fn process() {}
+
     #[inline]
-    pub fn create(source: OperationSource, ty: OperationType) -> Self {
+    pub fn create(source: ShaderSource, ty: OperationType) -> Self {
         Self {
-            bundles: Vec::<&'b Factor>::new(),
+            factors: Vec::<&'b Factor>::new(),
             source,
             ty,
         }
     }
 
-    pub fn include(mut self, bundle: &'b Factor, context: Option<ComputeContext>) -> Self {
+    pub fn include(mut self, factor: &'b Factor, context: Option<ComputeContext>) -> Self {
         match context {
-            None => self.bundles.push(bundle),
+            None => self.factors.push(factor),
             Some(_) => panic!(),
         };
         self
     }
 
-    pub fn process(&self) {}
+    // initiating tree traversal
+    pub fn exec(&self) {
+        let tree = OperationTree::<'_, '_, Factor>::create();
+    }
+
+    pub fn propagate(&self, tree: &mut OperationTree<'_, 'b, Factor>) {}
 }
 
 // generic way for working with nested ops and tensors

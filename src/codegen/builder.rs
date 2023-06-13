@@ -23,5 +23,3 @@ impl Builder {
         Cow::from(self.module.as_str())
     }
 }
-
-pub(crate) type Fragment = &'static str;

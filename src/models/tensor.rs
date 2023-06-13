@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    api::{Bundle, OperationNode, OperationSource, OperationTree, OperationType},
+    api::{Bundle, OperationNode, OperationType, ShaderSource},
     internals::Component,
 };
 
@@ -94,17 +94,6 @@ impl fmt::Display for TensorOrder {
     }
 }
 
-pub(crate) struct TensorFuture<'b> {
-    node: OperationNode<'b>,
-    valid: bool,
-}
-
-impl<'b> TensorFuture<'b> {
-    pub fn exc<C: Component, const N: usize>(&mut self) {
-        self.valid = true;
-    }
-}
-
 macro_rules! impl_ops {
     ( $ ( $trait:ident $fn:ident, )* ) => {
         $ (
@@ -114,10 +103,10 @@ macro_rules! impl_ops {
                 fn $fn(self, other: Tensor<C, N>) -> Self::Output {
                     let (lb, rb) = (self._prepare(), other._prepare());
 
-                    let source = OperationSource::Toolkit("$fn");
+                    let source = ShaderSource::Toolkit("$fn");
                     let ty = OperationType::default().union(OperationType::Arithmetic);
 
-                    let node = OperationNode::create(source, ty)
+                    let node = OperationNode::<'_, Bundle>::create(source, ty)
                         .include(lb, None)
                         .include(rb, None);
 

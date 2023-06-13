@@ -1,5 +1,5 @@
 #![feature(map_try_insert)]
-#![feature(once_cell)]
+#![feature(lazy_cell)]
 #![feature(ptr_from_ref)]
 
 pub(crate) mod api;
