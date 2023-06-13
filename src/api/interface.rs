@@ -32,6 +32,8 @@ impl Bundle {
 
         Ok(bundle)
     }
+
+    pub fn process(&self) {}
 }
 // GPU memory layout in respect to Bundle containers
 struct Layout {
@@ -64,16 +66,22 @@ impl Layout {
 }
 
 // State saver for nodes and traversal on evaluation
-pub(crate) struct OperationTree<'c, 't: 'c> {
-    nodes: Vec<OperationNode<'t>>,
+pub(crate) struct OperationTree<'c, 't: 'c, Factor>
+where
+    Factor: OperationFactor,
+{
+    nodes: Vec<OperationNode<'t, Factor>>,
     context: Option<ComputeContext<'c>>,
 }
 
-impl<'c, 't: 'c> OperationTree<'c, 't> {
+impl<'c, 't: 'c, Factor> OperationTree<'c, 't, Factor>
+where
+    Factor: OperationFactor,
+{
     #[inline]
     pub fn create() -> Self {
         Self {
-            nodes: Vec::<OperationNode>::new(),
+            nodes: Vec::<OperationNode<'_, Factor>>::new(),
             context: None,
         }
     }
@@ -86,33 +94,38 @@ pub(crate) enum OperationSource {
     Imported(&'static str, &'static str),
 }
 
-// Container for lazy execution
-pub(crate) struct OperationNode<'b> {
-    bundles: Vec<&'b Bundle>,
-    source: OperationSource,
-    ty: OperationType,
-}
-
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
     pub(crate) struct OperationType: u8 {
         const Arithmetic = 0b00000001;
         const Protected  = 0b00000010;
-        const Singular   = 0b00000100;
     }
 }
 
-impl<'b> OperationNode<'b> {
+// Container for lazy execution
+pub(crate) struct OperationNode<'b, Factor>
+where
+    Factor: OperationFactor,
+{
+    bundles: Vec<&'b Factor>,
+    source: OperationSource,
+    ty: OperationType,
+}
+
+impl<'b, Factor> OperationNode<'b, Factor>
+where
+    Factor: OperationFactor,
+{
     #[inline]
     pub fn create(source: OperationSource, ty: OperationType) -> Self {
         Self {
-            bundles: Vec::<&'b Bundle>::new(),
+            bundles: Vec::<&'b Factor>::new(),
             source,
             ty,
         }
     }
 
-    pub fn include(mut self, bundle: &'b Bundle, context: Option<ComputeContext>) -> Self {
+    pub fn include(mut self, bundle: &'b Factor, context: Option<ComputeContext>) -> Self {
         match context {
             None => self.bundles.push(bundle),
             Some(_) => panic!(),
@@ -123,6 +136,18 @@ impl<'b> OperationNode<'b> {
     pub fn process(&self) {}
 }
 
-pub(crate) trait OperationFuture {
-    type Packed;
+// generic way for working with nested ops and tensors
+pub(crate) trait OperationFactor {
+    type NodeFactor;
+}
+
+impl OperationFactor for Bundle {
+    type NodeFactor = Self;
+}
+
+impl<'b, Factor> OperationFactor for OperationNode<'b, Factor>
+where
+    Factor: OperationFactor,
+{
+    type NodeFactor = Self;
 }
