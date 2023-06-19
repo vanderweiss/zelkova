@@ -10,21 +10,27 @@ use crate::{
     internals::Component,
 };
 
+/// Global tracker for bindings generated in compute shaders.
 static TRACKER: AtomicU32 = AtomicU32::new(0);
 
+/// Most basic element in the toolkit, composing every model.
 pub struct Tensor<C: Component, const N: usize> {
+    #[doc(hidden)]
     pub _tensor: [C; N],
+    #[doc(hidden)]
     pub _binding: u32,
 
     pub order: TensorOrder,
 }
 
 impl<C: Component, const N: usize> Tensor<C, N> {
+    /// Generate binding for tensor, unique per _tensor. Does not allocate a buffer.
     #[inline]
     fn _prepare(&self) -> &Bundle {
         Bundle::bind(&self._tensor, self._binding).unwrap()
     }
 
+    /// Instantiate tensor from raw input array. Not intended to be directly called.
     #[inline]
     pub fn raw(_tensor: [C; N], order: TensorOrder) -> Self {
         let _binding: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
@@ -38,21 +44,27 @@ impl<C: Component, const N: usize> Tensor<C, N> {
 
     pub fn cast<T: Component>(&mut self) {}
 
-    // hyperdeterminant for 3D+
+    /// hyperdeterminant for 3D+
     pub fn determinant(&self) {}
 
     pub fn inverse(&self) {}
 }
 
+/// Denoting shape a.k.a. dimensions of a tensor.
 #[derive(PartialEq, Eq, Debug)]
 pub enum TensorOrder {
+    /// Tensors collapsed of implied dimensionality.
     Scalar,
+    /// Tensors of 1D.
     Vector(u64),
+    /// Tensors of 2D.
     Matrix(u64, u64),
+    /// Tensors of 3D.
     Cube(u64, u64, u64),
 }
 
 impl TensorOrder {
+    /// Matches shape to its own product.
     #[inline]
     pub fn size(&self) -> u64 {
         match self {
@@ -63,6 +75,8 @@ impl TensorOrder {
         }
     }
 
+    /// Checks for a square tensor, originally corresponding to the 2D space,
+    /// now expanded upon higher dimensionality as a property.
     #[inline]
     pub fn square(&self) -> bool {
         match self {
@@ -94,6 +108,7 @@ impl fmt::Display for TensorOrder {
     }
 }
 
+#[doc(hidden)]
 macro_rules! impl_ops {
     ( $ ( $trait:ident $fn:ident, )* ) => {
         $ (
@@ -125,6 +140,7 @@ impl_ops! {
 }
 
 // vec! but tensor, limited to second rank
+#[doc(hidden)]
 #[macro_export]
 macro_rules! tsr {
 

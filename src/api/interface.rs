@@ -160,10 +160,17 @@ where
 // generic way for working with nested ops and tensors
 pub(crate) trait OperationFactor {
     type NodeFactor;
+
+    fn resolved(&self) -> bool;
 }
 
 impl OperationFactor for Bundle {
     type NodeFactor = Self;
+
+    #[inline]
+    fn resolved(&self) -> bool {
+        true
+    }
 }
 
 impl<'b, Factor> OperationFactor for OperationNode<'b, Factor>
@@ -171,4 +178,9 @@ where
     Factor: OperationFactor,
 {
     type NodeFactor = Self;
+
+    #[inline]
+    fn resolved(&self) -> bool {
+        false
+    }
 }
