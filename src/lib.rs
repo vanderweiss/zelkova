@@ -1,3 +1,6 @@
+//! A vendor-neutral GPU library that aims to provide a simple and straightforward alternative to
+//! modern frameworks for machine learning and AI-related workload.
+
 #![feature(map_try_insert)]
 #![feature(lazy_cell)]
 #![feature(ptr_from_ref)]
