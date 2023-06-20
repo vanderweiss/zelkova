@@ -1,7 +1,6 @@
-pub(crate) mod error;
+//pub(crate) mod error;
+pub(crate) mod core;
 pub(crate) mod interface;
 
-// pub(crate) use self::error::ResultTk;
-pub(crate) use self::interface::{
-    Bundle, OperationNode, OperationTree, OperationType, ShaderSource,
-};
+pub(crate) use self::core::Bundle;
+pub(crate) use self::interface::{OperationNode, OperationTree, OperationType, ShaderSource};

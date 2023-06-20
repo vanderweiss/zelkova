@@ -11,61 +11,9 @@ use {
 };
 
 use crate::codegen::Builder;
-use crate::internals::{Buffer, Component, ComputeContext};
+use crate::internals::ComputeContext;
 
-// Buffers associated with toolkit models, contiguous arrays mostly
-pub(crate) struct Bundle {
-    buffer: Buffer,
-}
-
-impl Bundle {
-    pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<&Self, wgpu::Error> {
-        let layout = Layout::arrange();
-
-        let bundle = unsafe {
-            (*layout).insert(
-                Self {
-                    buffer: Buffer::bind::<_>(content, binding)?,
-                },
-                binding,
-            )
-        };
-
-        Ok(bundle)
-    }
-
-    pub fn process(&self) {}
-}
-
-// GPU memory layout in respect to Bundle containers
-struct Layout {
-    mapping: HashMap<u32, Bundle>,
-}
-
-impl Layout {
-    #[inline]
-    fn _arrange() -> Self {
-        Self {
-            mapping: HashMap::new(),
-        }
-    }
-
-    pub fn arrange() -> *mut Self {
-        static _layout: LazyLock<Mutex<Layout>> = LazyLock::new(|| Mutex::new(Layout::_arrange()));
-        _layout
-            .lock()
-            .as_deref_mut()
-            .map(|r| ptr::from_mut(r))
-            .unwrap()
-    }
-
-    #[inline]
-    pub unsafe fn insert(&mut self, bundle: Bundle, binding: u32) -> &Bundle {
-        self.mapping.try_insert(binding, bundle).unwrap_unchecked()
-    }
-
-    pub fn recycle(&self) {}
-}
+use super::Bundle;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TreeStatus {

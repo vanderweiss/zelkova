@@ -55,8 +55,7 @@ impl_resource! {
 
 */
 
-// Global label for wgpu models instantiation
-#[allow(non_upper_case_globals)]
+/// Generic label for every allocated zelkova-owned resource.
 static label: Option<&'static str> = Some("Zelkova owned resource");
 
 // Core interface to handle wgpu internals
