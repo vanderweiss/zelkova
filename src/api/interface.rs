@@ -75,8 +75,7 @@ pub(crate) struct OperationTree<'c, 't: 'c, Factor>
 where
     Factor: OperationFactor,
 {
-    nodes: Vec<OperationNode<'t, Factor>>,
-    // graph: placeholder
+    origin: OperationNode<'t, Factor>,
     context: Option<ComputeContext<'c>>,
 }
 
@@ -85,17 +84,10 @@ where
     Factor: OperationFactor,
 {
     #[inline]
-    pub fn create() -> Self {
+    pub fn create(origin: OperationNode<'t, Factor>) -> Self {
         Self {
-            nodes: Vec::<OperationNode<'t, Factor>>::new(),
+            origin,
             context: None,
-        }
-    }
-
-    pub fn link(&mut self, node: OperationNode<'t, Factor>) {
-        match self.context {
-            None => {}
-            Some(_) => panic!(),
         }
     }
 
@@ -129,9 +121,6 @@ impl<'b, Factor> OperationNode<'b, Factor>
 where
     Factor: OperationFactor,
 {
-    // resolving node for tree traversal
-    fn process() {}
-
     #[inline]
     pub fn create(source: ShaderSource, ty: OperationType) -> Self {
         Self {
@@ -149,10 +138,7 @@ where
         self
     }
 
-    // initiating tree traversal
-    pub fn exec(&self) {
-        let tree = OperationTree::<'_, '_, Factor>::create();
-    }
+    pub fn uphold(&self, tree: &mut OperationTree<'_, 'b, Factor>) {}
 
     pub fn propagate(&self, tree: &mut OperationTree<'_, 'b, Factor>) {}
 }
