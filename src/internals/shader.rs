@@ -99,7 +99,6 @@ impl Handler {
         })
     }
 
-    #[allow(non_upper_case_globals)]
     #[must_use]
     pub fn request() -> Result<*mut Self, wgpu::Error> {
         static _handler: LazyLock<Mutex<Handler>> =
