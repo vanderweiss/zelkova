@@ -35,6 +35,7 @@ impl Bundle {
 
     pub fn process(&self) {}
 }
+
 // GPU memory layout in respect to Bundle containers
 struct Layout {
     mapping: HashMap<u32, Bundle>,
@@ -65,9 +66,35 @@ impl Layout {
     pub fn recycle(&self) {}
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum TreeStatus {
+    Pending,
+    Ready,
+}
+
+impl TreeStatus {
+    fn ok(self) -> bool {
+        self == Self::Ready
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TreeDepth {
     Singular,
-    Layered(u32),
+    Layered(u32, TreeStatus),
+}
+
+impl TreeDepth {
+    fn register(&self) {
+        match self {
+            Self::Singular => {
+                panic!()
+            }
+            Self::Layered(mut depth, status) => {
+                status.ok().then(|| depth += 1);
+            }
+        }
+    }
 }
 
 // State saver for nodes and traversal on evaluation
@@ -76,6 +103,7 @@ where
     Factor: OperationFactor,
 {
     origin: OperationNode<'t, Factor>,
+    depth: TreeDepth,
     context: Option<ComputeContext<'c>>,
 }
 
@@ -85,12 +113,22 @@ where
 {
     #[inline]
     pub fn create(origin: OperationNode<'t, Factor>) -> Self {
+        let depth = {
+            if origin.resolved() {
+                TreeDepth::Singular
+            } else {
+                TreeDepth::Layered(1, TreeStatus::Pending)
+            }
+        };
         Self {
             origin,
+            depth,
             context: None,
         }
     }
 
+    /// If the origin contains a recursive nested operation, this serves as the startpoint. Otherwise resolve and return.
+    /// Operation hinting will be a thing later on for more efficient codegen.
     pub fn traverse(&self) {}
 }
 
@@ -140,7 +178,12 @@ where
 
     pub fn uphold(&self, tree: &mut OperationTree<'_, 'b, Factor>) {}
 
-    pub fn propagate(&self, tree: &mut OperationTree<'_, 'b, Factor>) {}
+    pub fn propagate(&self, tree: &mut OperationTree<'_, 'b, Factor>) {
+        match self.resolved() {
+            true => {}
+            false => {}
+        }
+    }
 }
 
 // generic way for working with nested ops and tensors
