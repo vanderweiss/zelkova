@@ -10,6 +10,7 @@ use {
     wgpu,
 };
 
+use crate::codegen::Builder;
 use crate::internals::{Buffer, Component, ComputeContext};
 
 // Buffers associated with toolkit models, contiguous arrays mostly
@@ -73,6 +74,7 @@ pub(crate) enum TreeStatus {
 }
 
 impl TreeStatus {
+    #[inline]
     fn ok(self) -> bool {
         self == Self::Ready
     }
@@ -111,7 +113,6 @@ impl<'c, 't: 'c, Factor> OperationTree<'c, 't, Factor>
 where
     Factor: OperationFactor,
 {
-    #[inline]
     pub fn create(origin: OperationNode<'t, Factor>) -> Self {
         let depth = {
             if origin.resolved() {
@@ -145,7 +146,6 @@ bitflags! {
     }
 }
 
-// Container for lazy execution
 pub(crate) struct OperationNode<'b, Factor>
 where
     Factor: OperationFactor,
@@ -186,7 +186,6 @@ where
     }
 }
 
-// generic way for working with nested ops and tensors
 pub(crate) trait OperationFactor {
     type NodeFactor;
 
