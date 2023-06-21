@@ -2,6 +2,19 @@
 
 use std::borrow::Cow;
 
+use crate::api::Bundle;
+
+type Tag = &'static str;
+
+pub(crate) struct Element<'b> {
+    bundle: &'b Bundle,
+}
+
+impl<'b> Element<'b> {
+    #[inline]
+    pub fn tag(&self) {}
+}
+
 pub(crate) struct Builder {
     module: String,
 }
