@@ -1,22 +1,23 @@
 #![allow(unused_imports)]
 
-use std::borrow::Cow;
+use std::{
+    borrow::Cow,
+    fmt::{Display, Formatter, Write},
+};
 
 use crate::api::Bundle;
 
-type Tag = &'static str;
-
-pub(crate) struct Element<'b> {
-    bundle: &'b Bundle,
+/// Bundle representation for codegen purposes.
+pub(crate) trait Element {
+    fn access(&self) -> String;
+    fn tag(&self) -> String;
 }
 
-impl<'b> Element<'b> {
-    #[inline]
-    pub fn tag(&self) {}
-}
+pub(crate) struct Pointer(u32, u32);
 
 pub(crate) struct Builder {
     module: String,
+    pointer: Pointer,
 }
 
 impl Builder {
@@ -24,11 +25,14 @@ impl Builder {
     pub fn new() -> Self {
         Self {
             module: String::new(),
+            pointer: Pointer(0, 0),
         }
     }
 
     // Generate buffer bindings
-    pub fn headers(&mut self) {}
+    pub fn headers(&mut self, bundle: &Bundle) {
+        dbg!(bundle.tag());
+    }
 
     // Format before converting to module
     #[inline]

@@ -110,7 +110,6 @@ impl Handler {
             .unwrap())
     }
 
-    #[inline]
     pub fn start_pass(&mut self) -> Result<wgpu::ComputePass, wgpu::Error> {
         let pass = self
             .encoder
@@ -177,20 +176,22 @@ impl Handler {
 }
 
 pub(crate) struct Buffer {
-    buffer: wgpu::Buffer,
-    binding: u32,
+    /// Actual internal wgpu buffer.    
+    _buffer: wgpu::Buffer,
+    /// Binding assigned at runtime.
+    pub binding: u32,
 }
 
 impl Buffer {
     pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<Self, wgpu::Error> {
-        let buffer = unsafe {
+        let _buffer = unsafe {
             Handler::request()?
                 .as_ref()
                 .unwrap()
                 .alloc_buffer_init(bytemuck::cast_slice::<C, u8>(content))?
         };
 
-        let entry = Self { buffer, binding };
+        let entry = Self { _buffer, binding };
 
         Ok(entry)
     }
@@ -198,7 +199,7 @@ impl Buffer {
     pub fn group(&self) -> Result<wgpu::BindGroupEntry, wgpu::Error> {
         let _group = wgpu::BindGroupEntry {
             binding: self.binding,
-            resource: self.buffer.as_entire_binding(),
+            resource: self._buffer.as_entire_binding(),
         };
 
         Ok(_group)
@@ -220,13 +221,18 @@ impl Buffer {
     }
 
     #[inline]
-    pub fn id(&self) -> wgpu::Id {
-        self.buffer.global_id()
+    pub fn free(&self) {
+        drop(self._buffer.slice(..).get_mapped_range());
     }
 
     #[inline]
-    pub fn free(&self) {
-        drop(self.buffer.slice(..).get_mapped_range());
+    pub fn get(&self) -> &wgpu::Buffer {
+        &self._buffer
+    }
+
+    #[inline]
+    pub fn id(&self) -> wgpu::Id {
+        self._buffer.global_id()
     }
 }
 

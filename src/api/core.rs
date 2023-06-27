@@ -1,5 +1,6 @@
 use {
     std::{
+        any,
         collections::HashMap,
         ptr,
         sync::{LazyLock, Mutex},
@@ -9,6 +10,13 @@ use {
 
 use crate::internals::{Buffer, Component};
 
+/// Allocation type.
+pub(crate) enum VMemory {
+    Runtime,
+    Static,
+}
+
+/// State to keep track of bundle during the compute process.
 pub(crate) enum VState {
     Allocated,
     Binded,
@@ -18,19 +26,32 @@ pub(crate) enum VState {
 /// Handler for wgpu buffer representations. A thin wrapper that aids with codegen and operations performed on them.
 /// Shouldn't be directly intantiated.
 pub(crate) struct Bundle {
-    buffer: Buffer,
-    state: VState,
+    pub buffer: Buffer,
+    pub memory: VMemory,
+    pub state: VState,
+
+    #[doc(hidden)]
+    _alias: &'static str,
+    #[doc(hidden)]
+    _binding: u32,
+    #[doc(hidden)]
+    _group: u32,
 }
 
 impl Bundle {
-    pub fn bind<C: Component>(content: &[C], binding: u32) -> Result<&Self, wgpu::Error> {
+    pub fn bind<C: Component>(_src: &[C], binding: u32) -> Result<&Self, wgpu::Error> {
         let layout = Layout::arrange();
 
         let bundle = unsafe {
             (*layout).insert(
                 Self {
-                    buffer: Buffer::bind::<_>(content, binding)?,
+                    buffer: Buffer::bind::<_>(_src, binding)?,
+                    memory: VMemory::Static,
                     state: VState::Binded,
+
+                    _alias: any::type_name::<C>(),
+                    _binding: binding,
+                    _group: 0,
                 },
                 binding,
             )
@@ -38,6 +59,9 @@ impl Bundle {
 
         Ok(bundle)
     }
+
+    #[inline]
+    pub fn map_usage(&self) {}
 }
 
 struct Layout {

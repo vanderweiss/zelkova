@@ -16,7 +16,7 @@ static TRACKER: AtomicU32 = AtomicU32::new(0);
 /// Most basic element in the toolkit, composing every model.
 pub struct Tensor<C: Component, const N: usize> {
     #[doc(hidden)]
-    pub _tensor: [C; N],
+    pub _src: [C; N],
     #[doc(hidden)]
     pub _binding: u32,
 
@@ -27,16 +27,16 @@ impl<C: Component, const N: usize> Tensor<C, N> {
     /// Generate binding for tensor, unique per _tensor. Does not allocate a buffer.
     #[inline]
     fn _prepare(&self) -> &Bundle {
-        Bundle::bind(&self._tensor, self._binding).unwrap()
+        Bundle::bind(&self._src, self._binding).unwrap()
     }
 
     /// Instantiate tensor from raw input array. Not intended to be directly called.
     #[inline]
-    pub fn raw(_tensor: [C; N], order: TensorOrder) -> Self {
+    pub fn raw(_src: [C; N], order: TensorOrder) -> Self {
         let _binding: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
 
         Self {
-            _tensor,
+            _src,
             _binding,
             order,
         }
@@ -147,9 +147,7 @@ macro_rules! tsr {
     ( $root:literal $ (, $next:literal )* $(,)? ) => {
         {
             let _tensor = [$root $ (, $next )*];
-
             let order = TensorOrder::Vector(_tensor.len() as u64);
-
             Tensor::raw(_tensor, raw)
         }
 
@@ -176,7 +174,6 @@ macro_rules! tsr {
             ];
 
             let order = TensorOrder::Matrix(x as u64, y as u64);
-
             Tensor::raw(_tensor, order)
         }
     };
