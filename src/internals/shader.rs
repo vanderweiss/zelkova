@@ -176,10 +176,11 @@ impl Handler {
 }
 
 pub(crate) struct Buffer {
-    /// Actual internal wgpu buffer.    
-    _buffer: wgpu::Buffer,
     /// Binding assigned at runtime.
     pub binding: u32,
+
+    #[doc(hidden)]
+    _buffer: wgpu::Buffer,
 }
 
 impl Buffer {
