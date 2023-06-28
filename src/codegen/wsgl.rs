@@ -5,6 +5,11 @@ use crate::api::{Bundle, VMemory, VState};
 
 impl Element for Bundle {
     #[inline]
+    fn access(&self) -> String {
+        String::new() // owo
+    }
+
+    #[inline]
     fn tag(&self) -> String {
         match self.memory {
             VMemory::Static => {

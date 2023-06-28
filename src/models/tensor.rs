@@ -15,12 +15,12 @@ static TRACKER: AtomicU32 = AtomicU32::new(0);
 
 /// Most basic element in the toolkit, composing every model.
 pub struct Tensor<C: Component, const N: usize> {
-    #[doc(hidden)]
-    pub _src: [C; N],
-    #[doc(hidden)]
-    pub _binding: u32,
-
     pub order: TensorOrder,
+
+    #[doc(hidden)]
+    _src: [C; N],
+    #[doc(hidden)]
+    _binding: u32,
 }
 
 impl<C: Component, const N: usize> Tensor<C, N> {
