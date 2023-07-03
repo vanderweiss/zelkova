@@ -30,9 +30,7 @@ impl Builder {
     }
 
     // Generate buffer bindings
-    pub fn headers(&mut self, bundle: &Bundle) {
-        dbg!(bundle.tag());
-    }
+    pub fn headers(&mut self, bundle: &Bundle) {}
 
     // Format before converting to module
     #[inline]

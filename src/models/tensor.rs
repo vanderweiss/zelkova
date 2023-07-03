@@ -36,9 +36,9 @@ impl<C: Component, const N: usize> Tensor<C, N> {
         let _binding: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
 
         Self {
+            order,
             _src,
             _binding,
-            order,
         }
     }
 
