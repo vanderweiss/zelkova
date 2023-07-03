@@ -6,14 +6,20 @@ use crate::api::{Bundle, VMemory, VState};
 impl Element for Bundle {
     #[inline]
     fn access(&self) -> String {
-        String::new() // owo
+        self.buffer.permissions()
     }
 
     #[inline]
     fn tag(&self) -> String {
         match self.memory {
             VMemory::Static => {
-                format!("group(self._group) binding(self._binding) var<storage, read_write> array<self._alias>")
+                format!(
+                    "group({0}) binding({1}) var<{2}> array<{3}>",
+                    self._group,
+                    self._binding,
+                    self.access(),
+                    self._alias,
+                )
             }
             VMemory::Runtime => {
                 panic!()

@@ -1,5 +1,5 @@
 pub(crate) mod builder;
-pub(crate) use builder::Builder;
+pub(crate) use builder::{Builder, Element};
 
 #[cfg(feature = "spirv")]
 pub(crate) mod spirv;

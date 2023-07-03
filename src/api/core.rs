@@ -31,11 +31,11 @@ pub(crate) struct Bundle {
     pub state: VState,
 
     #[doc(hidden)]
-    _alias: &'static str,
+    pub _alias: &'static str,
     #[doc(hidden)]
-    _binding: u32,
+    pub _binding: u32,
     #[doc(hidden)]
-    _group: u32,
+    pub _group: u32,
 }
 
 impl Bundle {
@@ -57,11 +57,10 @@ impl Bundle {
             )
         };
 
+        dbg!(bundle.tag());
+
         Ok(bundle)
     }
-
-    #[inline]
-    pub fn map_usage(&self) {}
 }
 
 struct Layout {
@@ -92,3 +91,5 @@ impl Layout {
 
     pub fn recycle(&self) {}
 }
+
+use crate::codegen::Element;
