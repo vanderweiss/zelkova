@@ -1,4 +1,7 @@
-use bytemuck::{self, NoUninit};
+use {
+    bytemuck::{self, NoUninit},
+    wgpu,
+};
 
 use super::handler::Handler;
 
@@ -83,15 +86,18 @@ impl Buffer {
         self._buffer.global_id()
     }
 
-    pub const fn factor(&self) -> u32 {
-        1 << 0
+    #[inline]
+    pub fn factor() -> wgpu::BufferUsages {
+        wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST
     }
 
-    pub const fn factor_et(&self) -> u32 {
-        1 << 1
+    #[inline]
+    pub fn factor_et() -> wgpu::BufferUsages {
+        wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::MAP_WRITE
     }
 
-    pub const fn factor_rs(&self) -> u32 {
-        1 << 2
+    #[inline]
+    pub fn factor_rs() -> wgpu::BufferUsages {
+        wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ
     }
 }

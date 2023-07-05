@@ -27,6 +27,8 @@ impl Element for Bundle {
             format.push_str(space);
         }
 
+        dbg!(self.buffer.bits());
+
         format
     }
 
