@@ -7,7 +7,7 @@ zelkova layers:
 - wgpu calls and shader generation
 
 checklist: 
-- [ ] functional math framework with wgpu (end of June)
+- [ ] functional math framework with wgpu (end of June, now this week)
 - [ ] model implementations
 - [ ] actually usable 
 - [ ] soon 
