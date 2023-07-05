@@ -9,7 +9,8 @@ use crate::api::Bundle;
 
 /// Bundle representation for codegen purposes.
 pub(crate) trait Element {
-    fn access(&self) -> String;
+    fn mode(&self) -> String;
+    fn space(&self) -> String;
     fn tag(&self) -> String;
 }
 

@@ -69,6 +69,11 @@ impl Buffer {
     }
 
     #[inline]
+    pub fn bits(&self) -> u32 {
+        self._buffer.usage().bits()
+    }
+
+    #[inline]
     pub fn free(&self) {
         drop(self._buffer.slice(..).get_mapped_range());
     }
@@ -78,36 +83,15 @@ impl Buffer {
         self._buffer.global_id()
     }
 
-    pub fn permissions(&self) -> String {
-        let matches = [
-            "map_read",
-            "map_write",
-            "copy_src",
-            "copy_dst",
-            "index",
-            "vertex",
-            "uniform",
-            "storage",
-            "indirect",
-            "query_resolve",
-        ];
+    pub const fn factor(&self) -> u32 {
+        1 << 0
+    }
 
-        let valid: Vec<&str> = matches
-            .iter()
-            .enumerate()
-            .filter(|(i, _)| self._buffer.usage().bits() == 1 << i)
-            .map(|(_, v)| *v)
-            .collect();
+    pub const fn factor_et(&self) -> u32 {
+        1 << 1
+    }
 
-        let mut format = String::new();
-
-        for usage in valid.iter() {
-            format.push_str(usage);
-            if usage != valid.last().unwrap() {
-                format.push_str(", ");
-            }
-        }
-
-        format
+    pub const fn factor_rs(&self) -> u32 {
+        1 << 2
     }
 }
