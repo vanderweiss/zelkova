@@ -66,7 +66,7 @@ impl Handler {
     pub fn start_pass(&mut self) -> Result<wgpu::ComputePass, wgpu::Error> {
         let pass = self
             .encoder
-            .begin_compute_pass(&wgpu::ComputePassDescriptor { label: None });
+            .begin_compute_pass(&wgpu::ComputePassDescriptor { label });
 
         Ok(pass)
     }
@@ -94,19 +94,35 @@ impl Handler {
         Ok((module, pipeline))
     }
 
-    pub fn alloc_buffer_init(&self, contents: &[u8]) -> Result<wgpu::Buffer, wgpu::Error> {
+    pub fn alloc_buffer_factor(&self, contents: &[u8]) -> Result<wgpu::Buffer, wgpu::Error> {
+        let usage = wgpu::BufferUsages::STORAGE
+            | wgpu::BufferUsages::COPY_SRC
+            | wgpu::BufferUsages::COPY_DST;
+
         let buffer = self
             .device
             .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label,
                 contents,
-                usage: wgpu::BufferUsages::MAP_READ,
+                usage,
             });
 
         Ok(buffer)
     }
 
-    pub fn alloc_uninit_buffer(&self) {}
+    pub fn alloc_buffer_staging(&self, size: usize) -> Result<wgpu::Buffer, wgpu::Error> {
+        let size = size as u64;
+        let usage = wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST;
+
+        let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {
+            label,
+            size,
+            usage,
+            mapped_at_creation: false,
+        });
+
+        Ok(buffer)
+    }
 
     pub fn join(
         &self,

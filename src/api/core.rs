@@ -8,7 +8,7 @@ use {
     wgpu,
 };
 
-use crate::internals::{Buffer, Component};
+use crate::internals::{Buffer, BufferType, Component};
 
 /// Allocation type.
 pub(crate) enum VMemory {
@@ -45,7 +45,7 @@ impl Bundle {
         let bundle = unsafe {
             (*layout).insert(
                 Self {
-                    buffer: Buffer::bind::<_>(_src, binding)?,
+                    buffer: Buffer::bind::<_>(BufferType::Factor, Some(_src))?,
                     memory: VMemory::Static,
                     state: VState::Binded,
 

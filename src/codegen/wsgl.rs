@@ -3,6 +3,10 @@ use std::fmt::{Display, Formatter, Write};
 use super::builder::Element;
 use crate::api::{Bundle, VMemory, VState};
 
+fn usage_predicate() -> Box<dyn Fn((&str, u32), u32) -> bool> {
+    Box::new(|(_, v), bits| bits & v != 0)
+}
+
 impl Element for Bundle {
     fn mode(&self) -> String {
         let modes = [("read", 1 << 0), ("write", 1 << 1)];
