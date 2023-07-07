@@ -83,7 +83,11 @@ impl Buffer {
 
     #[inline]
     pub fn bits(&self) -> u32 {
-        self._buffer.usage().bits()
+        if self._buffer.usage().contains_invalid_bits() {
+            panic!()
+        } else {
+            self._buffer.usage().bits()
+        }
     }
 
     #[inline]

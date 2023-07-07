@@ -1,24 +1,17 @@
-use std::fmt::{Display, Formatter, Write};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter, Write},
+};
 
 use super::builder::Element;
 use crate::api::{Bundle, VMemory, VState};
 
-fn usage_predicate() -> Box<dyn Fn((&str, u32), u32) -> bool> {
-    Box::new(|(_, v), bits| bits & v != 0)
-}
-
 impl Element for Bundle {
     fn mode(&self) -> String {
-        let modes = [("read", 1 << 0), ("write", 1 << 1)];
+        let implies = HashMap::from([("uniform", "read"), ("storage", "read_write")]);
         let mut format = String::new();
 
-        if modes.iter().all(|(_, v)| self.buffer.bits() & v != 0) {
-            format.push_str("read_write");
-        } else {
-            if let Some((mode, _)) = modes.iter().find(|(_, v)| self.buffer.bits() & v != 0) {
-                format.push_str(mode);
-            }
-        }
+        format.push_str(implies[self.space().as_str()]);
 
         format
     }
@@ -30,8 +23,6 @@ impl Element for Bundle {
         if let Some((space, _)) = spaces.iter().find(|(_, v)| self.buffer.bits() & v != 0) {
             format.push_str(space);
         }
-
-        dbg!(self.buffer.bits());
 
         format
     }

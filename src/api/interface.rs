@@ -48,20 +48,20 @@ impl TreeDepth {
 }
 
 // State saver for nodes and traversal on evaluation
-pub(crate) struct OperationTree<'c, 't: 'c, Factor>
+pub(crate) struct NodeTree<'c, 't: 'c, Factor>
 where
     Factor: OperationFactor,
 {
-    origin: OperationNode<'t, Factor>,
+    origin: Node<'t, Factor>,
     depth: TreeDepth,
     context: Option<ComputeContext<'c>>,
 }
 
-impl<'c, 't: 'c, Factor> OperationTree<'c, 't, Factor>
+impl<'c, 't: 'c, Factor> NodeTree<'c, 't, Factor>
 where
     Factor: OperationFactor,
 {
-    pub fn create(origin: OperationNode<'t, Factor>) -> Self {
+    pub fn create(origin: Node<'t, Factor>) -> Self {
         let depth = {
             if origin.resolved() {
                 TreeDepth::Singular
@@ -88,27 +88,27 @@ pub(crate) enum ShaderSource {
 
 bitflags! {
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-    pub(crate) struct OperationType: u8 {
+    pub(crate) struct NodeType: u8 {
         const Arithmetic = 0b00000001;
         const Protected  = 0b00000010;
     }
 }
 
-pub(crate) struct OperationNode<'b, Factor>
+pub(crate) struct Node<'b, Factor>
 where
     Factor: OperationFactor,
 {
     factors: Vec<&'b Factor>,
     source: ShaderSource,
-    ty: OperationType,
+    ty: NodeType,
 }
 
-impl<'b, Factor> OperationNode<'b, Factor>
+impl<'b, Factor> Node<'b, Factor>
 where
     Factor: OperationFactor,
 {
     #[inline]
-    pub fn create(source: ShaderSource, ty: OperationType) -> Self {
+    pub fn create(source: ShaderSource, ty: NodeType) -> Self {
         Self {
             factors: Vec::<&'b Factor>::new(),
             source,
@@ -124,9 +124,9 @@ where
         self
     }
 
-    pub fn uphold(&self, tree: &mut OperationTree<'_, 'b, Factor>) {}
+    pub fn uphold(&self, tree: &mut NodeTree<'_, 'b, Factor>) {}
 
-    pub fn propagate(&self, tree: &mut OperationTree<'_, 'b, Factor>) {
+    pub fn propagate(&self, tree: &mut NodeTree<'_, 'b, Factor>) {
         match self.resolved() {
             true => {}
             false => {}
@@ -149,7 +149,7 @@ impl OperationFactor for Bundle {
     }
 }
 
-impl<'b, Factor> OperationFactor for OperationNode<'b, Factor>
+impl<'b, Factor> OperationFactor for Node<'b, Factor>
 where
     Factor: OperationFactor,
 {

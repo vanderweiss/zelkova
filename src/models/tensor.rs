@@ -6,7 +6,7 @@ use std::{
 };
 
 use crate::{
-    api::{Bundle, OperationNode, OperationType, ShaderSource},
+    api::{Bundle, Node, NodeType, ShaderSource},
     internals::Component,
 };
 
@@ -119,9 +119,9 @@ macro_rules! impl_ops {
                     let (lb, rb) = (self._prepare(), other._prepare());
 
                     let source = ShaderSource::Toolkit("$fn");
-                    let ty = OperationType::default().union(OperationType::Arithmetic);
+                    let ty = NodeType::default().union(NodeType::Arithmetic);
 
-                    let node = OperationNode::<'_, Bundle>::create(source, ty)
+                    let node = Node::<'_, Bundle>::create(source, ty)
                         .include(lb, None)
                         .include(rb, None);
 
