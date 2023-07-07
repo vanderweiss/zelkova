@@ -83,11 +83,13 @@ impl Buffer {
 
     #[inline]
     pub fn bits(&self) -> u32 {
-        if self._buffer.usage().contains_invalid_bits() {
-            panic!()
-        } else {
-            self._buffer.usage().bits()
-        }
+        self._buffer.usage().bits()
+    }
+
+    #[inline]
+    pub fn contains(&self, bits: u32) -> bool {
+        let flags = wgpu::BufferUsages::from_bits(bits).unwrap();
+        self._buffer.usage().contains(flags)
     }
 
     #[inline]
@@ -98,5 +100,15 @@ impl Buffer {
     #[inline]
     pub fn id(&self) -> wgpu::Id {
         self._buffer.global_id()
+    }
+
+    #[inline]
+    pub fn is_storage(&self) -> bool {
+        self._buffer.usage().contains(wgpu::BufferUsages::STORAGE)
+    }
+
+    #[inline]
+    pub fn is_uniform(&self) -> bool {
+        self._buffer.usage().contains(wgpu::BufferUsages::UNIFORM)
     }
 }

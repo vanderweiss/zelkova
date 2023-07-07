@@ -11,24 +11,22 @@ impl Element for Bundle {
         format!("obj{0}", self._binding)
     }
 
-    fn mode(&self) -> String {
-        let implies = HashMap::from([("uniform", "read"), ("storage", "read_write")]);
-        let mut format = String::new();
-
-        format.push_str(implies[self.space().as_str()]);
-
-        format
+    fn mode(&self) -> &'static str {
+        self.specifier().1
     }
 
-    fn space(&self) -> String {
-        let spaces = [("uniform", 1 << 6), ("storage", 1 << 7)];
-        let mut format = String::new();
+    fn space(&self) -> &'static str {
+        self.specifier().0
+    }
 
-        if let Some((space, _)) = spaces.iter().find(|(_, v)| self.buffer.bits() & v != 0) {
-            format.push_str(space);
+    fn specifier(&self) -> (&'static str, &'static str) {
+        if self.buffer.is_uniform() {
+            ("uniform", "read")
+        } else if self.buffer.is_storage() {
+            ("storage", "read_write")
+        } else {
+            panic!()
         }
-
-        format
     }
 
     fn tag(&self) -> String {
