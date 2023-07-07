@@ -86,21 +86,17 @@ pub(crate) enum ShaderSource {
     Imported(&'static str, &'static str),
 }
 
-bitflags! {
-    #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-    pub(crate) struct NodeType: u8 {
-        const Arithmetic = 0b00000001;
-        const Protected  = 0b00000010;
-    }
+pub(crate) enum NodeType {
+    Arithmetic,
 }
 
 pub(crate) struct Node<'b, Factor>
 where
     Factor: OperationFactor,
 {
-    factors: Vec<&'b Factor>,
-    source: ShaderSource,
-    ty: NodeType,
+    pub factors: Vec<&'b Factor>,
+    pub source: ShaderSource,
+    pub ty: NodeType,
 }
 
 impl<'b, Factor> Node<'b, Factor>

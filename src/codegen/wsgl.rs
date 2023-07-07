@@ -3,10 +3,14 @@ use std::{
     fmt::{Display, Formatter, Write},
 };
 
-use super::builder::Element;
-use crate::api::{Bundle, VMemory, VState};
+use super::builder::{Element, Operation};
+use crate::api::{Bundle, Node, NodeTree, NodeType, OperationFactor, VMemory, VState};
 
 impl Element for Bundle {
+    fn alias(&self) -> String {
+        format!("obj{0}", self._binding)
+    }
+
     fn mode(&self) -> String {
         let implies = HashMap::from([("uniform", "read"), ("storage", "read_write")]);
         let mut format = String::new();
@@ -31,11 +35,12 @@ impl Element for Bundle {
         match self.memory {
             VMemory::Static => {
                 format!(
-                    "group({0}) binding({1}) var<{2}, {3}> array<{4}>",
+                    "group({0}) binding({1}) var<{2}, {3}> {4}: array<{5}>",
                     self._group,
                     self._binding,
                     self.space(),
                     self.mode(),
+                    self.alias(),
                     self._alias,
                 )
             }
@@ -43,5 +48,15 @@ impl Element for Bundle {
                 panic!()
             }
         }
+    }
+}
+
+impl<'b, Factor> Operation for Node<'b, Factor>
+where
+    Factor: OperationFactor,
+{
+    fn expand(&self) -> String {
+        let mut format = String::new();
+        format
     }
 }

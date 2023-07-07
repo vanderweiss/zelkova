@@ -9,9 +9,14 @@ use crate::api::Bundle;
 
 /// Bundle representation for codegen purposes.
 pub(crate) trait Element {
+    fn alias(&self) -> String;
     fn mode(&self) -> String;
     fn space(&self) -> String;
     fn tag(&self) -> String;
+}
+
+pub(crate) trait Operation {
+    fn expand(&self) -> String;
 }
 
 pub(crate) struct Pointer(u32, u32);
@@ -31,7 +36,7 @@ impl Builder {
     }
 
     // Generate buffer bindings
-    pub fn headers(&mut self, bundle: &Bundle) {}
+    pub fn headers(&mut self, bundle: Bundle) {}
 
     // Format before converting to module
     #[inline]

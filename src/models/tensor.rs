@@ -119,7 +119,7 @@ macro_rules! impl_ops {
                     let (lb, rb) = (self._prepare(), other._prepare());
 
                     let source = ShaderSource::Toolkit("$fn");
-                    let ty = NodeType::default().union(NodeType::Arithmetic);
+                    let ty = NodeType::Arithmetic;
 
                     let node = Node::<'_, Bundle>::create(source, ty)
                         .include(lb, None)
