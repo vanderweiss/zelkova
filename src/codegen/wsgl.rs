@@ -7,10 +7,6 @@ use super::builder::{Element, Operation};
 use crate::api::{Bundle, Node, NodeTree, NodeType, OperationFactor, VMemory, VState};
 
 impl Element for Bundle {
-    fn alias(&self) -> String {
-        format!("obj{0}", self._binding)
-    }
-
     fn mode(&self) -> &'static str {
         self.specifier().1
     }
@@ -33,12 +29,12 @@ impl Element for Bundle {
         match self.memory {
             VMemory::Static => {
                 format!(
-                    "group({0}) binding({1}) var<{2}, {3}> {4}: array<{5}>",
+                    "group({0}) binding({1}) var<{2}, {3}> tsr{4}: array<{5}>",
                     self._group,
                     self._binding,
                     self.space(),
                     self.mode(),
-                    self.alias(),
+                    self._binding,
                     self._alias,
                 )
             }

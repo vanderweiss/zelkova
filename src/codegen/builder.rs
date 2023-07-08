@@ -9,7 +9,6 @@ use crate::api::Bundle;
 
 /// Bundle representation for codegen purposes.
 pub(crate) trait Element {
-    fn alias(&self) -> String;
     fn mode(&self) -> &'static str;
     fn space(&self) -> &'static str;
     fn specifier(&self) -> (&'static str, &'static str);
