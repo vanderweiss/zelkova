@@ -57,30 +57,6 @@ impl Buffer {
         Ok(entry)
     }
 
-    pub fn group(&self, binding: u32) -> Result<wgpu::BindGroupEntry, wgpu::Error> {
-        let _group = wgpu::BindGroupEntry {
-            binding,
-            resource: self._buffer.as_entire_binding(),
-        };
-
-        Ok(_group)
-    }
-
-    pub fn layout(&self, binding: u32) -> Result<wgpu::BindGroupLayoutEntry, wgpu::Error> {
-        let _layout = wgpu::BindGroupLayoutEntry {
-            binding,
-            visibility: wgpu::ShaderStages::COMPUTE,
-            ty: wgpu::BindingType::Buffer {
-                ty: wgpu::BufferBindingType::Storage { read_only: true },
-                has_dynamic_offset: false,
-                min_binding_size: None,
-            },
-            count: None,
-        };
-
-        Ok(_layout)
-    }
-
     #[inline]
     pub fn bits(&self) -> u32 {
         self._buffer.usage().bits()
@@ -110,5 +86,59 @@ impl Buffer {
     #[inline]
     pub fn is_uniform(&self) -> bool {
         self._buffer.usage().contains(wgpu::BufferUsages::UNIFORM)
+    }
+
+    #[inline]
+    pub fn resource(&self) -> wgpu::BindingResource {
+        self._buffer.as_entire_binding()
+    }
+}
+
+pub(crate) struct BufferMeta<'b> {
+    pub buffer: &'b Buffer,
+
+    #[doc(hidden)]
+    _group: wgpu::BindGroupEntry<'b>,
+    #[doc(hidden)]
+    _layout: wgpu::BindGroupLayoutEntry,
+}
+
+impl<'b> BufferMeta<'b> {
+    pub fn from_buffer(binding: u32, buffer: &'b Buffer) -> Result<Self, wgpu::Error> {
+        let _group = wgpu::BindGroupEntry {
+            binding,
+            resource: buffer.resource(),
+        };
+
+        let ty = {
+            if buffer.is_storage() {
+                wgpu::BufferBindingType::Storage { read_only: false }
+            } else if buffer.is_uniform() {
+                wgpu::BufferBindingType::Uniform
+            } else {
+                panic!()
+            }
+        };
+
+        let visibility = wgpu::ShaderStages::COMPUTE;
+
+        let _layout = wgpu::BindGroupLayoutEntry {
+            binding,
+            visibility,
+            ty: wgpu::BindingType::Buffer {
+                ty,
+                has_dynamic_offset: false,
+                min_binding_size: None,
+            },
+            count: None,
+        };
+
+        let meta = Self {
+            buffer,
+            _group,
+            _layout,
+        };
+
+        Ok(meta)
     }
 }
