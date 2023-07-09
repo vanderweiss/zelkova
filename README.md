@@ -1,12 +1,10 @@
-# zelkova - ML toolkit
-gpu moment
+# Zelkova - Machine Learning Toolkit
 
-zelkova layers: 
-- toolkit or api
-- internals or wgpu wrappers and utils
-- wgpu calls and shader generation
+Zelkova is a toolkit aimed towards simple and easy deployment of ML models. Adittionally, 
+it provides various ways for users to tune them and make their own as they see fit. Currently
+very work-in-progress; refer to the checklist below.
 
-checklist: 
+Checklist: 
 - [ ] functional math framework with wgpu (end of June, now this week)
 - [ ] model implementations
 - [ ] actually usable 

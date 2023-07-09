@@ -123,25 +123,6 @@ impl Handler {
 
         Ok(buffer)
     }
-
-    pub fn join(
-        &self,
-        entries: &[wgpu::BindGroupEntry],
-        meta: &[wgpu::BindGroupLayoutEntry],
-    ) -> Result<wgpu::BindGroup, wgpu::Error> {
-        let group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-            label,
-            layout: &self
-                .device
-                .create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                    label,
-                    entries: meta,
-                }),
-            entries,
-        });
-
-        Ok(group)
-    }
 }
 
 pub(crate) struct ComputeContext<'a> {
