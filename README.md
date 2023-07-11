@@ -1,6 +1,6 @@
 # Zelkova - Machine Learning Toolkit
 
-Zelkova is a toolkit aimed towards simple and easy deployment of ML models. Adittionally, 
+Zelkova is a toolkit aimed towards simple and easy deployment of ML models. Aditionally, 
 it provides various ways for users to tune them and make their own as they see fit. Currently
 very work-in-progress; refer to the checklist below.
 
