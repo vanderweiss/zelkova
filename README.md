@@ -5,7 +5,7 @@ it provides various ways for users to tune them and make their own as they see f
 very work-in-progress; refer to the checklist below.
 
 Checklist: 
-- [ ] functional math framework with wgpu (end of June, now this week)
+- [ ] functional math framework with wgpu (end of July)
 - [ ] model implementations
 - [ ] actually usable 
 - [ ] soon 
