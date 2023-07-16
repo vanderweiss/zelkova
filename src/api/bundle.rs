@@ -9,28 +9,18 @@ use {
 
 use crate::internals::{Buffer, Component};
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub(crate) enum Memory {
-    Runtime,
+    #[default]
     Static,
+    Runtime,
 }
 
-impl Default for Memory {
-    fn default() -> Self {
-        Memory::Static
-    }
-}
-
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub(crate) enum State {
+    #[default]
     Binded,
     Prepared,
-}
-
-impl Default for State {
-    fn default() -> Self {
-        State::Prepared
-    }
 }
 
 #[derive(Builder)]
