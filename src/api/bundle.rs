@@ -67,7 +67,7 @@ impl BufferHolder {
         }
     }
 
-    pub fn init(&mut self, _buffer: Buffer) {
+    pub fn initialize(&mut self, _buffer: Buffer) {
         self.init = true;
         self.buffer.write(_buffer);
     }
@@ -100,6 +100,8 @@ impl Bundle {
         let props = Properties::construct(any::type_name::<C>(), binding, None);
 
         let bundle = Self { buffer, props };
+
+        dbg!(bundle.tag());
 
         Ok(bundle)
     }
