@@ -1,14 +1,4 @@
-// Low level user API behind the toolkit
-
-use {
-    bitflags::bitflags,
-    std::{
-        collections::HashMap,
-        ptr,
-        sync::{LazyLock, Mutex},
-    },
-    wgpu,
-};
+use {bitflags::bitflags, std::collections::HashMap, wgpu};
 
 use crate::codegen::Builder;
 use crate::internals::ComputeContext;

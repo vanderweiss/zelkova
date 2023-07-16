@@ -4,7 +4,7 @@ use std::{
 };
 
 use super::builder::{Element, Operation};
-use crate::api::{Bundle, Node, NodeTree, NodeType, OperationFactor, VMemory, VState};
+use crate::api::{Bundle, Memory, Node, OperationFactor, State};
 
 impl Element for Bundle {
     fn mode(&self) -> &'static str {
@@ -26,19 +26,19 @@ impl Element for Bundle {
     }
 
     fn tag(&self) -> String {
-        match self.memory {
-            VMemory::Static => {
+        match self.props.memory {
+            Memory::Static => {
                 format!(
                     "group({0}) binding({1}) var<{2}, {3}> tsr{4}: array<{5}>",
-                    self._group,
-                    self._binding,
+                    self.props.group,
+                    self.props.binding,
                     self.space(),
                     self.mode(),
-                    self._binding,
-                    self._alias,
+                    self.props.binding,
+                    self.props.alias,
                 )
             }
-            VMemory::Runtime => {
+            Memory::Runtime => {
                 panic!()
             }
         }

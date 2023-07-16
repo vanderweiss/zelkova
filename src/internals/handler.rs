@@ -1,10 +1,6 @@
 use {
     pollster,
-    std::{
-        borrow::Cow,
-        ptr,
-        sync::{LazyLock, Mutex},
-    },
+    std::borrow::Cow,
     wgpu::{self, util::DeviceExt},
 };
 
@@ -20,18 +16,12 @@ pub(crate) struct Handler {
 }
 
 impl Handler {
-    #[must_use]
-    fn _request() -> Result<Self, wgpu::Error> {
+    pub fn request() -> Result<Self, wgpu::Error> {
         pollster::block_on(async move {
             let adapter = wgpu::Instance::default()
                 .request_adapter(&wgpu::RequestAdapterOptions::default())
                 .await
                 .unwrap();
-
-            // known issue with Lavapipe
-            if adapter.get_info().vendor == 0x10005 {
-                panic!();
-            }
 
             let (device, queue) = adapter
                 .request_device(&wgpu::DeviceDescriptor::default(), None)
@@ -49,18 +39,6 @@ impl Handler {
 
             Ok(handler)
         })
-    }
-
-    #[must_use]
-    pub fn request() -> Result<*mut Self, wgpu::Error> {
-        static _handler: LazyLock<Mutex<Handler>> =
-            LazyLock::new(|| Mutex::new(Handler::_request().expect("Failed to connect to GPU")));
-
-        Ok(_handler
-            .lock()
-            .as_deref_mut()
-            .map(|r| ptr::from_mut(r))
-            .unwrap())
     }
 
     pub fn start_pass(&mut self) -> Result<wgpu::ComputePass, wgpu::Error> {
@@ -123,35 +101,4 @@ impl Handler {
 
         Ok(buffer)
     }
-}
-
-pub(crate) struct ComputeContext<'a> {
-    bindgroup: wgpu::BindGroup,
-    module: wgpu::ShaderModule,
-    pass: wgpu::ComputePass<'a>,
-    pipeline: wgpu::ComputePipeline,
-}
-
-impl ComputeContext<'_> {
-    // Wrapper around a compute shader and its components, shader language module should be ready by this point
-    // pub fn pack(encoder: wgpu::CommandEncoder, pipeline: wgpu::ComputePipeline) -> Result<Self, wgpu::Error> {}
-    pub fn pack(bindgroup: wgpu::BindGroup, _module: Cow<'_, str>) -> Result<Self, wgpu::Error> {
-        let handler = unsafe { Handler::request()?.as_mut().unwrap() };
-
-        let (module, pipeline) = handler
-            .load_module(_module)
-            .expect("Processed corrupt module.");
-
-        let pass = handler.start_pass()?;
-
-        let context = Self {
-            bindgroup,
-            module,
-            pass,
-            pipeline,
-        };
-
-        Ok(context)
-    }
-    pub fn run(&self) {}
 }

@@ -18,27 +18,25 @@ pub struct Tensor<C: Component, const N: usize> {
     pub order: TensorOrder,
 
     #[doc(hidden)]
-    _src: [C; N],
+    _bundle: Bundle,
+
     #[doc(hidden)]
-    _binding: u32,
+    _src: [C; N],
 }
 
 impl<C: Component, const N: usize> Tensor<C, N> {
-    /// Generate binding for tensor, unique per _tensor. Does not allocate a buffer.
-    #[inline]
-    fn _prepare(&self) -> &Bundle {
-        Bundle::bind(&self._src, self._binding).unwrap()
+    fn _fetch(&self) -> &Bundle {
+        &self._bundle
     }
 
-    /// Instantiate tensor from raw input array. Not intended to be directly called.
-    #[inline]
-    pub fn raw(_src: [C; N], order: TensorOrder) -> Self {
-        let _binding: u32 = TRACKER.fetch_add(1, Ordering::SeqCst);
+    pub fn from_array(_src: [C; N], order: TensorOrder) -> Self {
+        let binding = TRACKER.fetch_add(1, Ordering::SeqCst);
+        let _bundle = Bundle::bind(&_src, binding).unwrap();
 
         Self {
             order,
+            _bundle,
             _src,
-            _binding,
         }
     }
 
@@ -116,7 +114,7 @@ macro_rules! impl_ops {
                 type Output = Tensor<C, N>;
 
                 fn $fn(self, other: Tensor<C, N>) -> Self::Output {
-                    let (lb, rb) = (self._prepare(), other._prepare());
+                    let (lb, rb) = (self._fetch(), other._fetch());
 
                     let source = ShaderSource::Toolkit("$fn");
                     let ty = NodeType::Arithmetic;
@@ -146,9 +144,9 @@ macro_rules! tsr {
 
     ( $root:literal $ (, $next:literal )* $(,)? ) => {
         {
-            let _tensor = [$root $ (, $next )*];
-            let order = TensorOrder::Vector(_tensor.len() as u64);
-            Tensor::raw(_tensor, raw)
+            let _src = [$root $ (, $next )*];
+            let order = TensorOrder::Vector(_src.len() as u64);
+            Tensor::from_array(_tensor, raw)
         }
 
     };
@@ -157,7 +155,7 @@ macro_rules! tsr {
         {
             let (mut x, mut y) = (1, 0);
             let mut depth = true;
-            let _tensor = [
+            let _src = [
                 $ (
                     {
                         y += 1;
@@ -174,7 +172,7 @@ macro_rules! tsr {
             ];
 
             let order = TensorOrder::Matrix(x as u64, y as u64);
-            Tensor::raw(_tensor, order)
+            Tensor::from_array(_src, order)
         }
     };
 

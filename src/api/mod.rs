@@ -1,6 +1,8 @@
 //pub(crate) mod error;
-pub(crate) mod core;
-pub(crate) mod interface;
+pub(crate) mod bundle;
+pub(crate) mod instance;
+pub(crate) mod node;
 
-pub(crate) use self::core::{Bundle, VMemory, VState};
-pub(crate) use self::interface::{Node, NodeTree, NodeType, OperationFactor, ShaderSource};
+pub(crate) use self::bundle::{Bundle, Memory, State};
+pub(crate) use self::instance::Instance;
+pub(crate) use self::node::{Node, NodeTree, NodeType, OperationFactor, ShaderSource};

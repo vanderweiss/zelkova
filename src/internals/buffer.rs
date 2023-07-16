@@ -4,7 +4,7 @@ use {
     wgpu,
 };
 
-use super::handler::Handler;
+use super::Handler;
 
 mod _sealed {
     pub trait Sealed {}
@@ -41,13 +41,18 @@ pub(crate) struct Buffer {
 }
 
 impl Buffer {
-    pub fn bind<C: Component>(ty: BufferType, content: Option<&[C]>) -> Result<Self, wgpu::Error> {
-        let _buffer = unsafe {
-            let handler = Handler::request()?.as_ref().unwrap();
+    pub fn bind<C: Component>(
+        handler: Handler,
+        ty: BufferType,
+        content: Option<&[C]>,
+    ) -> Result<Self, wgpu::Error> {
+        let _buffer = {
             match ty {
-                BufferType::Factor => handler.alloc_buffer_factor(
-                    bytemuck::cast_slice::<C, u8>(content.unwrap_unchecked()),
-                )?,
+                BufferType::Factor => {
+                    handler.alloc_buffer_factor(bytemuck::cast_slice::<C, u8>(unsafe {
+                        content.unwrap_unchecked()
+                    }))?
+                }
                 BufferType::Staging => handler.alloc_buffer_staging(mem::size_of::<C>())?,
             }
         };
@@ -73,10 +78,13 @@ impl Buffer {
         drop(self._buffer.slice(..).get_mapped_range());
     }
 
+    /// Generic typing to be made clear.
+    /*
     #[inline]
-    pub fn id(&self) -> wgpu::Id {
+    pub fn id(&self) -> wgpu::Id<wgpu_> {
         self._buffer.global_id()
     }
+    */
 
     #[inline]
     pub fn is_storage(&self) -> bool {
