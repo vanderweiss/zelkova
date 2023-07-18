@@ -27,22 +27,29 @@ impl Element for Bundle {
 
     fn tag(&self) -> String {
         match self.props.state {
-            State::Prepared => match self.props.memory {
-                Memory::Static => {
-                    format!(
-                        "group({0}) binding({1}) var<{2}, {3}> tsr{4}: array<{5}>",
-                        self.props.group,
-                        self.props.binding,
-                        self.space(),
-                        self.mode(),
-                        self.props.binding,
-                        self.props.alias,
-                    )
-                }
-                Memory::Runtime => {
-                    panic!()
-                }
-            },
+            State::Prepared => {
+                let pre = format!(
+                    "group({0}) binding({1}) var<{2}, {3}> tsr{2}>",
+                    self.props.group,
+                    self.props.binding,
+                    self.space(),
+                    self.mode(),
+                );
+
+                let post = match self.props.memory {
+                    Memory::Static => {
+                        format!(
+                            "{0}: array<{1}, {2}>",
+                            pre, self.props.alias, self.props.count
+                        )
+                    }
+                    Memory::Runtime => {
+                        format!("{0}: array<{1}>", pre, self.props.alias)
+                    }
+                };
+
+                post
+            }
             State::Binded => {
                 panic!()
             }

@@ -1,8 +1,10 @@
 use {
     std::{
         any,
+        marker::Sized,
         mem::MaybeUninit,
         ops::{Deref, DerefMut},
+        sync::atomic::{AtomicU32, Ordering},
     },
     wgpu,
 };
@@ -27,6 +29,7 @@ pub(crate) enum State {
 pub(crate) struct Properties {
     pub alias: &'static str,
     pub binding: u32,
+    pub count: usize,
 
     #[builder(default)]
     pub group: u32,
@@ -39,11 +42,15 @@ pub(crate) struct Properties {
 }
 
 impl Properties {
-    pub fn construct(alias: &'static str, binding: u32, memory: Option<Memory>) -> Self {
+    pub fn construct(alias: &'static str, count: usize, memory: Option<Memory>) -> Self {
+        static Tracker: AtomicU32 = AtomicU32::new(0);
+        let binding = Tracker.fetch_add(1, Ordering::SeqCst);
+
         let mut builder = PropertiesBuilder::default();
         builder
             .alias(alias)
             .binding(binding)
+            .count(count)
             .memory(memory.unwrap_or_default())
             .build()
             .unwrap()
@@ -95,11 +102,26 @@ pub(crate) struct Bundle {
 }
 
 impl Bundle {
-    pub fn bind<C: Component>(_src: &[C], binding: u32) -> Result<Self, wgpu::Error> {
-        let buffer = BufferHolder::new();
-        let props = Properties::construct(any::type_name::<C>(), binding, None);
+    pub fn bind_st<C: Component, const N: usize>(_src: &[C; N]) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(any::type_name::<C>(), N, None);
 
-        let bundle = Self { buffer, props };
+        let bundle = Self {
+            buffer: BufferHolder::new(),
+            props,
+        };
+
+        dbg!(bundle.tag());
+
+        Ok(bundle)
+    }
+
+    pub fn bind_rt<C: Component>(_src: &[C]) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(any::type_name::<C>(), _src.len(), Some(Memory::Runtime));
+
+        let bundle = Self {
+            buffer: BufferHolder::new(),
+            props,
+        };
 
         dbg!(bundle.tag());
 

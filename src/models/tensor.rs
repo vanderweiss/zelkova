@@ -1,17 +1,11 @@
 // High level user API, exposed as it acts as the toolkit itself
 
-use std::{
-    fmt, ops,
-    sync::atomic::{AtomicU32, Ordering},
-};
+use std::{fmt, ops};
 
 use crate::{
     api::{Bundle, Node, NodeType, ShaderSource},
     internals::Component,
 };
-
-/// Global tracker for bindings generated in compute shaders.
-static TRACKER: AtomicU32 = AtomicU32::new(0);
 
 /// Most basic element in the toolkit, composing every model.
 pub struct Tensor<C: Component, const N: usize> {
@@ -30,8 +24,7 @@ impl<C: Component, const N: usize> Tensor<C, N> {
     }
 
     pub fn from_array(_src: [C; N], order: TensorOrder) -> Self {
-        let binding = TRACKER.fetch_add(1, Ordering::SeqCst);
-        let _bundle = Bundle::bind(&_src, binding).unwrap();
+        let _bundle = Bundle::bind_st(&_src).unwrap();
 
         Self {
             order,
@@ -46,6 +39,13 @@ impl<C: Component, const N: usize> Tensor<C, N> {
     pub fn determinant(&self) {}
 
     pub fn inverse(&self) {}
+}
+
+pub struct TensorFuture {
+    pub order: TensorOrder,
+
+    #[doc(hidden)]
+    _bundle: Bundle,
 }
 
 /// Denoting shape a.k.a. dimensions of a tensor.
