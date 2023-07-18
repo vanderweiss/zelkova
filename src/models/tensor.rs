@@ -7,47 +7,6 @@ use crate::{
     internals::Component,
 };
 
-/// Most basic element in the toolkit, composing every model.
-pub struct Tensor<C: Component, const N: usize> {
-    pub order: TensorOrder,
-
-    #[doc(hidden)]
-    _bundle: Bundle,
-
-    #[doc(hidden)]
-    _src: [C; N],
-}
-
-impl<C: Component, const N: usize> Tensor<C, N> {
-    fn _fetch(&self) -> &Bundle {
-        &self._bundle
-    }
-
-    pub fn from_array(_src: [C; N], order: TensorOrder) -> Self {
-        let _bundle = Bundle::bind_st(&_src).unwrap();
-
-        Self {
-            order,
-            _bundle,
-            _src,
-        }
-    }
-
-    pub fn cast<T: Component>(&mut self) {}
-
-    /// hyperdeterminant for 3D+
-    pub fn determinant(&self) {}
-
-    pub fn inverse(&self) {}
-}
-
-pub struct TensorFuture {
-    pub order: TensorOrder,
-
-    #[doc(hidden)]
-    _bundle: Bundle,
-}
-
 /// Denoting shape a.k.a. dimensions of a tensor.
 #[derive(PartialEq, Eq, Debug)]
 pub enum TensorOrder {
@@ -106,14 +65,88 @@ impl fmt::Display for TensorOrder {
     }
 }
 
+pub struct TensorMeta<'s, C: Component, const N: usize> {
+    _src: Option<&'s [C]>,
+    _per: Option<Vec<C>>,
+}
+
+impl<'s, C: Component, const N: usize> TensorMeta<'s, C, N> {
+    #[inline]
+    pub fn from_reference(_src: &'s [C]) -> Self {
+        Self {
+            _src: Some(_src),
+            _per: None,
+        }
+    }
+
+    #[inline]
+    pub fn from_persist(_src: [C; N]) -> Self {
+        Self {
+            _src: None,
+            _per: Some(Vec::from(_src)),
+        }
+    }
+
+    #[inline]
+    pub fn slots(&self) -> (bool, bool) {
+        (self._src.is_some(), self._per.is_some())
+    }
+}
+
+/// Most basic element in the toolkit, composing every model.
+pub struct Tensor<'s, C: Component, const N: usize> {
+    pub order: TensorOrder,
+
+    #[doc(hidden)]
+    _bundle: Bundle,
+
+    #[doc(hidden)]
+    _meta: TensorMeta<'s, C, N>,
+}
+
+impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
+    fn _fetch(&self) -> &Bundle {
+        &self._bundle
+    }
+
+    pub fn from_array(_src: [C; N], order: TensorOrder) -> Self {
+        let _bundle = Bundle::bind_st::<C>(N).unwrap();
+        let _meta = TensorMeta::from_persist(_src);
+
+        Self {
+            order,
+            _bundle,
+            _meta,
+        }
+    }
+
+    pub fn from_slice(_src: &'s [C], order: TensorOrder) -> Self {
+        let _bundle = Bundle::bind_st::<C>(_src.len()).unwrap();
+        let _meta = TensorMeta::from_reference(_src);
+
+        Self {
+            order,
+            _bundle,
+            _meta,
+        }
+    }
+
+    pub fn cast<T: Component>(&mut self) {}
+
+    /// hyperdeterminant for 3D+
+    pub fn determinant(&self) {}
+
+    pub fn inverse(&self) {}
+}
+
 #[doc(hidden)]
 macro_rules! impl_ops {
     ( $ ( $trait:ident $fn:ident, )* ) => {
         $ (
-            impl<C: Component, const N: usize> ops::$trait for Tensor<C, N> {
-                type Output = Tensor<C, N>;
+            impl<'s, C: Component, const N: usize> ops::$trait for Tensor<'s, C, N> {
+                type Output = Tensor<'s, C, N>;
 
-                fn $fn(self, other: Tensor<C, N>) -> Self::Output {
+                fn $fn(self, other: Tensor<'s, C, N>) -> Self::Output {
                     let (lb, rb) = (self._fetch(), other._fetch());
 
                     let source = ShaderSource::Toolkit("$fn");

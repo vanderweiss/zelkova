@@ -44,6 +44,7 @@ pub(crate) struct Properties {
 impl Properties {
     pub fn construct(alias: &'static str, count: usize, memory: Option<Memory>) -> Self {
         static Tracker: AtomicU32 = AtomicU32::new(0);
+
         let binding = Tracker.fetch_add(1, Ordering::SeqCst);
 
         let mut builder = PropertiesBuilder::default();
@@ -102,8 +103,8 @@ pub(crate) struct Bundle {
 }
 
 impl Bundle {
-    pub fn bind_st<C: Component, const N: usize>(_src: &[C; N]) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(any::type_name::<C>(), N, None);
+    pub fn bind_st<C: Component>(count: usize) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(any::type_name::<C>(), count, None);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
@@ -115,8 +116,8 @@ impl Bundle {
         Ok(bundle)
     }
 
-    pub fn bind_rt<C: Component>(_src: &[C]) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(any::type_name::<C>(), _src.len(), Some(Memory::Runtime));
+    pub fn bind_rt<C: Component>(count: usize) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(any::type_name::<C>(), count, Some(Memory::Runtime));
 
         let bundle = Self {
             buffer: BufferHolder::new(),
