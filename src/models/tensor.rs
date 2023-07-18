@@ -66,30 +66,30 @@ impl fmt::Display for TensorOrder {
 }
 
 pub struct TensorMeta<'s, C: Component, const N: usize> {
-    _src: Option<&'s [C]>,
-    _per: Option<Vec<C>>,
+    src: Option<&'s [C]>,
+    per: Option<Vec<C>>,
 }
 
 impl<'s, C: Component, const N: usize> TensorMeta<'s, C, N> {
     #[inline]
     pub fn from_reference(_src: &'s [C]) -> Self {
         Self {
-            _src: Some(_src),
-            _per: None,
+            src: Some(_src),
+            per: None,
         }
     }
 
     #[inline]
     pub fn from_persist(_src: [C; N]) -> Self {
         Self {
-            _src: None,
-            _per: Some(Vec::from(_src)),
+            src: None,
+            per: Some(Vec::from(_src)),
         }
     }
 
     #[inline]
     pub fn slots(&self) -> (bool, bool) {
-        (self._src.is_some(), self._per.is_some())
+        (self.src.is_some(), self.per.is_some())
     }
 }
 
@@ -98,36 +98,36 @@ pub struct Tensor<'s, C: Component, const N: usize> {
     pub order: TensorOrder,
 
     #[doc(hidden)]
-    _bundle: Bundle,
+    bundle: Bundle,
 
     #[doc(hidden)]
-    _meta: TensorMeta<'s, C, N>,
+    meta: TensorMeta<'s, C, N>,
 }
 
 impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
     fn _fetch(&self) -> &Bundle {
-        &self._bundle
+        &self.bundle
     }
 
     pub fn from_array(_src: [C; N], order: TensorOrder) -> Self {
-        let _bundle = Bundle::bind_st::<C>(N).unwrap();
-        let _meta = TensorMeta::from_persist(_src);
+        let bundle = Bundle::bind_st::<C>(N).unwrap();
+        let meta = TensorMeta::from_persist(_src);
 
         Self {
             order,
-            _bundle,
-            _meta,
+            bundle,
+            meta,
         }
     }
 
     pub fn from_slice(_src: &'s [C], order: TensorOrder) -> Self {
-        let _bundle = Bundle::bind_st::<C>(_src.len()).unwrap();
-        let _meta = TensorMeta::from_reference(_src);
+        let bundle = Bundle::bind_st::<C>(_src.len()).unwrap();
+        let meta = TensorMeta::from_reference(_src);
 
         Self {
             order,
-            _bundle,
-            _meta,
+            bundle,
+            meta,
         }
     }
 
