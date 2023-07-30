@@ -6,6 +6,6 @@ very work-in-progress; refer to the checklist below.
 
 Checklist: 
 - [ ] functional math framework with wgpu (around August)
-- [ ] model implementations
-- [ ] actually usable 
+- [ ] model implementations (around Halloween)
+- [ ] actually usable (uhh idk)
 - [ ] soon 
