@@ -2,7 +2,7 @@
 
 use std::{fmt, ops};
 
-use crate::{api::Bundle, internals::Component};
+use crate::{core::Bundle, internals::Component};
 
 /// Denoting shape a.k.a. dimensions of a tensor.
 #[derive(PartialEq, Eq, Debug)]

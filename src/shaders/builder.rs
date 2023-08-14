@@ -5,19 +5,7 @@ use std::{
     fmt::{Display, Formatter, Write},
 };
 
-use crate::api::Bundle;
-
-/// Bundle representation for codegen purposes.
-pub(crate) trait Element {
-    fn mode(&self) -> &'static str;
-    fn space(&self) -> &'static str;
-    fn specifier(&self) -> (&'static str, &'static str);
-    fn tag(&mut self) -> String;
-}
-
-pub(crate) trait Operation {
-    fn expand(&self) -> String;
-}
+use crate::core::Element;
 
 pub(crate) struct Pointer(u32, u32);
 
@@ -34,9 +22,6 @@ impl Builder {
             pointer: Pointer(0, 0),
         }
     }
-
-    // Generate buffer bindings
-    pub fn headers(&mut self, bundle: Bundle) {}
 
     // Format before converting to module
     #[inline]

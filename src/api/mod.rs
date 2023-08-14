@@ -1,6 +1,3 @@
-//pub(crate) mod error;
-pub(crate) mod bundle;
-pub(crate) mod instance;
+pub mod tensor;
 
-pub(crate) use self::bundle::Bundle;
-pub(crate) use self::instance::Instance;
+pub use self::tensor::{Tensor, TensorOrder};

@@ -3,9 +3,16 @@ use std::{
     fmt::{Display, Formatter, Write},
 };
 
-use super::builder::Element;
-use crate::api::Bundle;
+use super::Bundle;
 
+pub(crate) trait Element {
+    fn mode(&self) -> &'static str;
+    fn space(&self) -> &'static str;
+    fn specifier(&self) -> (&'static str, &'static str);
+    fn tag(&mut self) -> String;
+}
+
+#[cfg(feature = "wsgl")]
 impl Element for Bundle {
     fn mode(&self) -> &'static str {
         self.specifier().1

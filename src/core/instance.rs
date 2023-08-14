@@ -1,5 +1,4 @@
-use std::default::Default;
-use wgpu;
+use {std::default::Default, wgpu};
 
 use crate::internals::Handler;
 
