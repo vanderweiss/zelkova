@@ -3,8 +3,8 @@ use std::{
     fmt::{Display, Formatter, Write},
 };
 
-use super::builder::{Element, Operation};
-use crate::api::{Bundle, Memory, Node, OperationFactor, State};
+use super::builder::Element;
+use crate::api::{Bundle, Memory};
 
 impl Element for Bundle {
     fn mode(&self) -> &'static str {
@@ -30,8 +30,8 @@ impl Element for Bundle {
             State::Prepared => {
                 let pre = format!(
                     "group({0}) binding({1}) var<{2}, {3}> tsr{2}>",
-                    self.props.group,
-                    self.props.binding,
+                    self.props.group(),
+                    self.props.binding(),
                     self.space(),
                     self.mode(),
                 );
@@ -40,11 +40,13 @@ impl Element for Bundle {
                     Memory::Static => {
                         format!(
                             "{0}: array<{1}, {2}>",
-                            pre, self.props.alias, self.props.count
+                            pre,
+                            self.props.alias(),
+                            self.props.count()
                         )
                     }
                     Memory::Runtime => {
-                        format!("{0}: array<{1}>", pre, self.props.alias)
+                        format!("{0}: array<{1}>", pre, self.props.alias())
                     }
                 };
 
@@ -54,15 +56,5 @@ impl Element for Bundle {
                 panic!()
             }
         }
-    }
-}
-
-impl<'b, Factor> Operation for Node<'b, Factor>
-where
-    Factor: OperationFactor,
-{
-    fn expand(&self) -> String {
-        let mut format = String::new();
-        format
     }
 }

@@ -65,7 +65,7 @@ impl fmt::Display for TensorOrder {
     }
 }
 
-pub struct TensorMeta<'s, C: Component, const N: usize> {
+pub(crate) struct TensorMeta<'s, C: Component, const N: usize> {
     src: Option<&'s [C]>,
     per: Option<Vec<C>>,
 }

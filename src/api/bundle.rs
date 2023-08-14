@@ -12,6 +12,25 @@ use {
 use crate::internals::{Buffer, Component};
 
 #[derive(Clone, Default)]
+pub(crate) enum Future {
+    #[default]
+    Pending,
+    Done,
+}
+
+#[derive(Clone)]
+pub(crate) enum Group {
+    Base,
+    Custom(u32),
+}
+
+impl Default for Group {
+    fn default() -> Group {
+        Group::Base
+    }
+}
+
+#[derive(Clone, Default)]
 pub(crate) enum Memory {
     #[default]
     Static,
@@ -19,46 +38,62 @@ pub(crate) enum Memory {
 }
 
 #[derive(Clone, Default)]
-pub(crate) enum State {
+pub(crate) enum Type {
     #[default]
-    Binded,
-    Prepared,
+    Result,
+    Future,
 }
 
-#[derive(Builder)]
-pub(crate) struct Properties {
+pub(crate) struct GenOpts {
     pub alias: &'static str,
     pub binding: u32,
     pub count: usize,
+}
 
-    #[builder(default)]
-    pub group: u32,
-
-    #[builder(default)]
+#[derive(Default)]
+pub(crate) struct SpecOpts {
+    pub future: Future,
+    pub group: Group,
     pub memory: Memory,
+    pub ty: Type,
+}
 
-    #[builder(default)]
-    pub state: State,
+pub(crate) struct Properties {
+    pub gen: GenOpts,
+    pub spec: SpecOpts,
 }
 
 impl Properties {
-    pub fn construct(alias: &'static str, count: usize, memory: Option<Memory>) -> Self {
+    pub fn construct(alias: &'static str, count: usize) -> Self {
         static Tracker: AtomicU32 = AtomicU32::new(0);
 
         let binding = Tracker.fetch_add(1, Ordering::SeqCst);
 
-        let mut builder = PropertiesBuilder::default();
-        builder
-            .alias(alias)
-            .binding(binding)
-            .count(count)
-            .memory(memory.unwrap_or_default())
-            .build()
-            .unwrap()
+        let props = Self {
+            gen: GenOpts {
+                alias,
+                binding,
+                count,
+            },
+            spec: SpecOpts::default(),
+        };
+
+        props
     }
 
-    pub fn prepare(&mut self) {
-        self.state = State::Prepared;
+    #[inline]
+    pub fn alias(&self) -> &'static {
+        self.gen.alias
+    }
+
+    #[inline]
+    pub fn binding(&self) -> u32 {
+        self.gen.binding
+    }
+
+    #[inline]
+    pub fn count(&self) -> usize {
+        self.gen.count
     }
 }
 
