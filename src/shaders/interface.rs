@@ -3,7 +3,7 @@ use std::{
     fmt::{Display, Formatter, Write},
 };
 
-use super::Bundle;
+use crate::core::Bundle;
 
 pub(crate) trait Element {
     fn mode(&self) -> &'static str;

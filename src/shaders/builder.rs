@@ -5,7 +5,7 @@ use std::{
     fmt::{Display, Formatter, Write},
 };
 
-use crate::core::Element;
+use super::Element;
 
 pub(crate) struct Pointer(u32, u32);
 
