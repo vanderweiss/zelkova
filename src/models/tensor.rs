@@ -2,10 +2,7 @@
 
 use std::{fmt, ops};
 
-use crate::{
-    api::{Bundle, Node, NodeType, ShaderSource},
-    internals::Component,
-};
+use crate::{api::Bundle, internals::Component};
 
 /// Denoting shape a.k.a. dimensions of a tensor.
 #[derive(PartialEq, Eq, Debug)]
@@ -148,14 +145,6 @@ macro_rules! impl_ops {
 
                 fn $fn(self, other: Tensor<'s, C, N>) -> Self::Output {
                     let (lb, rb) = (self._fetch(), other._fetch());
-
-                    let source = ShaderSource::Toolkit("$fn");
-                    let ty = NodeType::Arithmetic;
-
-                    let node = Node::<'_, Bundle>::create(source, ty)
-                        .include(lb, None)
-                        .include(rb, None);
-
                     other
                 }
             }

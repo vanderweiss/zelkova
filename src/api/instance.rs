@@ -1,6 +1,15 @@
+use std::default::Default;
 use wgpu;
 
 use crate::internals::Handler;
+
+pub struct InstanceOpts;
+
+impl Default for InstanceOpts {
+    fn default() -> Self {
+        Self
+    }
+}
 
 pub struct Instance {
     handler: Handler,

@@ -1,7 +1,6 @@
 use {
     std::{
         any,
-        marker::Sized,
         mem::MaybeUninit,
         ops::{Deref, DerefMut},
         sync::atomic::{AtomicU32, Ordering},
@@ -11,14 +10,7 @@ use {
 
 use crate::internals::{Buffer, Component};
 
-#[derive(Clone, Default)]
-pub(crate) enum Future {
-    #[default]
-    Pending,
-    Done,
-}
-
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub(crate) enum Group {
     Base,
     Custom(u32),
@@ -30,29 +22,40 @@ impl Default for Group {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Copy, Default)]
 pub(crate) enum Memory {
     #[default]
     Static,
     Runtime,
 }
 
-#[derive(Clone, Default)]
-pub(crate) enum Type {
+#[derive(Clone, Copy, Default)]
+pub(crate) enum State {
     #[default]
+    Pending,
+    Done,
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum Type {
     Result,
-    Future,
+    Future(State),
+}
+
+impl Default for Type {
+    fn default() -> Self {
+        Type::Result
+    }
 }
 
 pub(crate) struct GenOpts {
     pub alias: &'static str,
     pub binding: u32,
-    pub count: usize,
+    pub length: usize,
 }
 
 #[derive(Default)]
 pub(crate) struct SpecOpts {
-    pub future: Future,
     pub group: Group,
     pub memory: Memory,
     pub ty: Type,
@@ -64,7 +67,7 @@ pub(crate) struct Properties {
 }
 
 impl Properties {
-    pub fn construct(alias: &'static str, count: usize) -> Self {
+    pub fn construct(alias: &'static str, length: usize) -> Self {
         static Tracker: AtomicU32 = AtomicU32::new(0);
 
         let binding = Tracker.fetch_add(1, Ordering::SeqCst);
@@ -73,7 +76,7 @@ impl Properties {
             gen: GenOpts {
                 alias,
                 binding,
-                count,
+                length,
             },
             spec: SpecOpts::default(),
         };
@@ -82,7 +85,7 @@ impl Properties {
     }
 
     #[inline]
-    pub fn alias(&self) -> &'static {
+    pub fn alias(&self) -> &'static str {
         self.gen.alias
     }
 
@@ -92,8 +95,30 @@ impl Properties {
     }
 
     #[inline]
-    pub fn count(&self) -> usize {
-        self.gen.count
+    pub fn length(&self) -> usize {
+        self.gen.length
+    }
+
+    #[inline]
+    pub fn group(&self) -> u32 {
+        match self.spec.group {
+            Group::Base => 0,
+            Group::Custom(group) => group,
+        }
+    }
+
+    #[inline]
+    pub fn ready(&mut self) -> bool {
+        match self.spec.ty {
+            Type::Result => true,
+            Type::Future(state) => match state {
+                State::Pending => false,
+                State::Done => {
+                    self.spec.ty = Type::Result;
+                    true
+                }
+            },
+        }
     }
 }
 
@@ -138,31 +163,25 @@ pub(crate) struct Bundle {
 }
 
 impl Bundle {
-    pub fn bind_st<C: Component>(count: usize) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(any::type_name::<C>(), count, None);
+    pub fn bind_st<C: Component>(length: usize) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(any::type_name::<C>(), length);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
             props,
         };
-
-        dbg!(bundle.tag());
 
         Ok(bundle)
     }
 
-    pub fn bind_rt<C: Component>(count: usize) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(any::type_name::<C>(), count, Some(Memory::Runtime));
+    pub fn bind_rt<C: Component>(length: usize) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(any::type_name::<C>(), length);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
             props,
         };
-
-        dbg!(bundle.tag());
 
         Ok(bundle)
     }
 }
-
-use crate::codegen::Element;

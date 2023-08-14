@@ -7,9 +7,6 @@
 //#![feature(ptr_from_ref)]
 #![allow(non_upper_case_globals)]
 
-#[macro_use]
-extern crate derive_builder;
-
 pub(crate) mod api;
 pub(crate) mod codegen;
 pub(crate) mod internals;

@@ -4,7 +4,7 @@ use std::{
 };
 
 use super::builder::Element;
-use crate::api::{Bundle, Memory};
+use crate::api::Bundle;
 
 impl Element for Bundle {
     fn mode(&self) -> &'static str {
@@ -25,36 +25,28 @@ impl Element for Bundle {
         }
     }
 
-    fn tag(&self) -> String {
-        match self.props.state {
-            State::Prepared => {
-                let pre = format!(
-                    "group({0}) binding({1}) var<{2}, {3}> tsr{2}>",
-                    self.props.group(),
-                    self.props.binding(),
-                    self.space(),
-                    self.mode(),
-                );
+    fn tag(&mut self) -> String {
+        let pre = format!(
+            "group({0}) binding({1}) var<{2}, {3}> tsr{2}>",
+            self.props.group(),
+            self.props.binding(),
+            self.space(),
+            self.mode(),
+        );
 
-                let post = match self.props.memory {
-                    Memory::Static => {
-                        format!(
-                            "{0}: array<{1}, {2}>",
-                            pre,
-                            self.props.alias(),
-                            self.props.count()
-                        )
-                    }
-                    Memory::Runtime => {
-                        format!("{0}: array<{1}>", pre, self.props.alias())
-                    }
-                };
+        let post = {
+            if self.props.ready() {
+                format!(
+                    "{0}: array<{1}, {2}>",
+                    pre,
+                    self.props.alias(),
+                    self.props.length(),
+                )
+            } else {
+                format!("{0}: array<{1}>", pre, self.props.alias())
+            }
+        };
 
-                post
-            }
-            State::Binded => {
-                panic!()
-            }
-        }
+        post
     }
 }

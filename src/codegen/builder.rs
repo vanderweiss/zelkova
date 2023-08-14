@@ -12,7 +12,7 @@ pub(crate) trait Element {
     fn mode(&self) -> &'static str;
     fn space(&self) -> &'static str;
     fn specifier(&self) -> (&'static str, &'static str);
-    fn tag(&self) -> String;
+    fn tag(&mut self) -> String;
 }
 
 pub(crate) trait Operation {
