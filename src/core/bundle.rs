@@ -12,6 +12,20 @@ use {
 use crate::internals::{Buffer, Component};
 
 #[derive(Clone, Copy)]
+pub(crate) enum Binding {
+    Assigned(u32),
+    Hold,
+}
+
+impl Default for Binding {
+    fn default() -> Self {
+        static TRACKER: AtomicU32 = AtomicU32::new(0);
+        let binding = TRACKER.fetch_add(1, Ordering::SeqCst);
+        Binding::Assigned(binding)
+    }
+}
+
+#[derive(Clone, Copy)]
 pub(crate) enum Group {
     Base,
     Custom(u32),
@@ -76,6 +90,11 @@ where
     }
 }
 
+pub(crate) enum Length {
+    Sized(usize),
+    Unsized,
+}
+
 #[derive(Clone, Copy, Default)]
 pub(crate) enum Memory {
     #[default]
@@ -95,10 +114,10 @@ pub(crate) struct Properties<C>
 where
     C: Component,
 {
-    pub binding: u32,
+    pub binding: Binding,
     pub group: Group,
     pub init: Init<C>,
-    pub length: usize,
+    pub length: Length,
     pub memory: Memory,
 }
 
@@ -107,23 +126,17 @@ where
     C: Component,
 {
     pub fn construct(layout: Layout, length: usize, op: Option<Operation<C>>) -> Self {
-        static Tracker: AtomicU32 = AtomicU32::new(0);
-
-        let binding = Tracker.fetch_add(1, Ordering::SeqCst);
-        let group = Group::Base;
-        let ty: PhantomData<C> = PhantomData;
-
         let props = match layout {
             Layout::Init => Self {
-                binding,
-                group,
+                binding: Binding::default(),
+                group: Group::default(),
                 init: Init::default(),
-                length,
+                length: Length::Sized(length),
                 memory: Memory::default(),
             },
             Layout::Future => Self {
-                binding,
-                group,
+                binding: Binding::Hold,
+                group: Group::default(),
                 init: {
                     if let Some(op) = op {
                         Init::Future(op)
@@ -131,7 +144,7 @@ where
                         panic!()
                     }
                 },
-                length,
+                length: Length::Sized(length),
                 memory: Memory::default(),
             },
             Layout::Dyn => {
@@ -140,14 +153,6 @@ where
         };
 
         props
-    }
-
-    #[inline]
-    pub fn group(&self) -> u32 {
-        match self.group {
-            Group::Base => 0,
-            Group::Custom(group) => group,
-        }
     }
 
     #[inline]
