@@ -1,6 +1,7 @@
 use {
     std::{
         any,
+        marker::PhantomData,
         mem::MaybeUninit,
         ops::{Deref, DerefMut},
         sync::atomic::{AtomicU32, Ordering},
@@ -23,6 +24,59 @@ impl Default for Group {
 }
 
 #[derive(Clone, Copy, Default)]
+pub(crate) enum State {
+    #[default]
+    Pending,
+    Done,
+}
+
+pub(crate) struct Operation<C>
+where
+    C: Component,
+{
+    op: String,
+    state: State,
+    ty: PhantomData<C>,
+}
+
+impl<C> Operation<C>
+where
+    C: Component,
+{
+    pub fn feed(op: String) -> Self {
+        Self {
+            op,
+            state: State::default(),
+            ty: PhantomData,
+        }
+    }
+
+    pub fn resolved(&self) -> bool {
+        match self.state {
+            State::Pending => false,
+            State::Done => true,
+        }
+    }
+}
+
+pub(crate) enum Init<C>
+where
+    C: Component,
+{
+    Result,
+    Future(Operation<C>),
+}
+
+impl<C> Default for Init<C>
+where
+    C: Component,
+{
+    fn default() -> Self {
+        Init::Result
+    }
+}
+
+#[derive(Clone, Copy, Default)]
 pub(crate) enum Memory {
     #[default]
     Static,
@@ -30,95 +84,83 @@ pub(crate) enum Memory {
 }
 
 #[derive(Clone, Copy, Default)]
-pub(crate) enum State {
+pub(crate) enum Layout {
     #[default]
-    Pending,
-    Done,
+    Init,
+    Future,
+    Dyn,
 }
 
-#[derive(Clone, Copy)]
-pub(crate) enum Type {
-    Result,
-    Future(State),
-}
-
-impl Default for Type {
-    fn default() -> Self {
-        Type::Result
-    }
-}
-
-pub(crate) struct GenOpts {
-    pub alias: &'static str,
+pub(crate) struct Properties<C>
+where
+    C: Component,
+{
     pub binding: u32,
-    pub length: usize,
-}
-
-#[derive(Default)]
-pub(crate) struct SpecOpts {
     pub group: Group,
+    pub init: Init<C>,
+    pub length: usize,
     pub memory: Memory,
-    pub ty: Type,
 }
 
-pub(crate) struct Properties {
-    pub gen: GenOpts,
-    pub spec: SpecOpts,
-}
-
-impl Properties {
-    pub fn construct(alias: &'static str, length: usize) -> Self {
+impl<C> Properties<C>
+where
+    C: Component,
+{
+    pub fn construct(layout: Layout, length: usize, op: Option<Operation<C>>) -> Self {
         static Tracker: AtomicU32 = AtomicU32::new(0);
 
         let binding = Tracker.fetch_add(1, Ordering::SeqCst);
+        let group = Group::Base;
+        let ty: PhantomData<C> = PhantomData;
 
-        let props = Self {
-            gen: GenOpts {
-                alias,
+        let props = match layout {
+            Layout::Init => Self {
                 binding,
+                group,
+                init: Init::default(),
                 length,
+                memory: Memory::default(),
             },
-            spec: SpecOpts::default(),
+            Layout::Future => Self {
+                binding,
+                group,
+                init: {
+                    if let Some(op) = op {
+                        Init::Future(op)
+                    } else {
+                        panic!()
+                    }
+                },
+                length,
+                memory: Memory::default(),
+            },
+            Layout::Dyn => {
+                panic!()
+            }
         };
 
         props
     }
 
     #[inline]
-    pub fn alias(&self) -> &'static str {
-        self.gen.alias
-    }
-
-    #[inline]
-    pub fn binding(&self) -> u32 {
-        self.gen.binding
-    }
-
-    #[inline]
-    pub fn length(&self) -> usize {
-        self.gen.length
-    }
-
-    #[inline]
     pub fn group(&self) -> u32 {
-        match self.spec.group {
+        match self.group {
             Group::Base => 0,
             Group::Custom(group) => group,
         }
     }
 
     #[inline]
-    pub fn ready(&mut self) -> bool {
-        match self.spec.ty {
-            Type::Result => true,
-            Type::Future(state) => match state {
-                State::Pending => false,
-                State::Done => {
-                    self.spec.ty = Type::Result;
-                    true
-                }
-            },
+    pub fn ready(&self) -> bool {
+        match self.init {
+            Init::Result => true,
+            Init::Future(ref op) => op.resolved(),
         }
+    }
+
+    #[inline]
+    pub fn typename(&self) -> &'static str {
+        any::type_name::<C>()
     }
 }
 
@@ -157,14 +199,21 @@ impl DerefMut for BufferHolder {
 
 /// Interface on top of the toolkit's wrapper for buffers, used for shader generation and extends
 /// to other api-related structures.
-pub(crate) struct Bundle {
+
+pub(crate) struct Bundle<C>
+where
+    C: Component,
+{
     pub buffer: BufferHolder,
-    pub props: Properties,
+    pub props: Properties<C>,
 }
 
-impl Bundle {
-    pub fn bind_st<C: Component>(length: usize) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(any::type_name::<C>(), length);
+impl<C> Bundle<C>
+where
+    C: Component,
+{
+    pub fn bind_init(length: usize) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(Layout::default(), length, None);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
@@ -174,8 +223,8 @@ impl Bundle {
         Ok(bundle)
     }
 
-    pub fn bind_rt<C: Component>(length: usize) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(any::type_name::<C>(), length);
+    pub fn bind_future(length: usize, op: Operation<C>) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(Layout::Future, length, Some(op));
 
         let bundle = Self {
             buffer: BufferHolder::new(),

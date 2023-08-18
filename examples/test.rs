@@ -9,7 +9,7 @@ fn main() {
 
     let t3 = t1 + t2;
 
-    // t3.resolve(instance); for actually running the operation.
+    // instance.resolve(t3); for actually running the operation.
 
     println!("{}", t3.order);
 }

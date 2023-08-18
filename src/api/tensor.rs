@@ -95,19 +95,19 @@ pub struct Tensor<'s, C: Component, const N: usize> {
     pub order: TensorOrder,
 
     #[doc(hidden)]
-    bundle: Bundle,
+    bundle: Bundle<C>,
 
     #[doc(hidden)]
     meta: TensorMeta<'s, C, N>,
 }
 
 impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
-    fn _fetch(&self) -> &Bundle {
+    fn _fetch(&self) -> &Bundle<C> {
         &self.bundle
     }
 
     pub fn from_array(_src: [C; N], order: TensorOrder) -> Self {
-        let bundle = Bundle::bind_st::<C>(N).unwrap();
+        let bundle = Bundle::bind_init(N).unwrap();
         let meta = TensorMeta::from_persist(_src);
 
         Self {
@@ -118,7 +118,7 @@ impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
     }
 
     pub fn from_slice(_src: &'s [C], order: TensorOrder) -> Self {
-        let bundle = Bundle::bind_st::<C>(_src.len()).unwrap();
+        let bundle = Bundle::bind_init(_src.len()).unwrap();
         let meta = TensorMeta::from_reference(_src);
 
         Self {
