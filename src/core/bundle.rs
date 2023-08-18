@@ -1,6 +1,7 @@
 use {
     std::{
         any,
+        fmt::{self, Display, Formatter},
         marker::PhantomData,
         mem::MaybeUninit,
         ops::{Deref, DerefMut},
@@ -25,6 +26,15 @@ impl Default for Binding {
     }
 }
 
+impl Display for Binding {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Binding::Assigned(binding) => write!(f, "{}", binding),
+            Binding::Hold => panic!(),
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub(crate) enum Group {
     Base,
@@ -37,11 +47,54 @@ impl Default for Group {
     }
 }
 
+impl Display for Group {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Group::Base => write!(f, "0"),
+            Group::Custom(group) => write!(f, "{}", group),
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum Length {
+    Sized(usize),
+    Unsized,
+}
+
+impl Display for Length {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Length::Sized(length) => write!(f, "{}", length),
+            Length::Unsized => panic!(),
+        }
+    }
+}
+
+impl PartialEq for Length {
+    fn eq(&self, other: &Self) -> bool {
+        match self {
+            Length::Sized(lhs) => match other {
+                Length::Sized(rhs) => lhs == rhs,
+                Length::Unsized => panic!(),
+            },
+            Length::Unsized => panic!(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Default)]
 pub(crate) enum State {
     #[default]
     Pending,
     Done,
+}
+
+#[derive(Clone, Copy, Default)]
+pub(crate) enum Storage {
+    #[default]
+    StArray,
+    DyArray,
 }
 
 pub(crate) struct Operation<C>
@@ -88,11 +141,6 @@ where
     fn default() -> Self {
         Init::Result
     }
-}
-
-pub(crate) enum Length {
-    Sized(usize),
-    Unsized,
 }
 
 #[derive(Clone, Copy, Default)]

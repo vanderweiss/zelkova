@@ -14,7 +14,7 @@ pub(crate) trait Element {
     fn mode(&self) -> &'static str;
     fn space(&self) -> &'static str;
     fn specifier(&self) -> (&'static str, &'static str);
-    fn tag(&mut self) -> String;
+    fn tag(&self) -> String;
 }
 
 #[cfg(feature = "wsgl")]
@@ -47,10 +47,10 @@ where
         }
     }
 
-    fn tag(&mut self) -> String {
+    fn tag(&self) -> String {
         let pre = format!(
             "group({0}) binding({1}) var<{2}, {3}> tsr{2}>",
-            self.props.group(),
+            self.props.group,
             self.props.binding,
             self.space(),
             self.mode(),
@@ -93,6 +93,6 @@ where
 
         let op = Operation::feed(post);
 
-        Bundle::bind_future(lhs.props.length, op)
+        Bundle::bind_future(0, op)
     }
 }
