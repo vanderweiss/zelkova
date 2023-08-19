@@ -73,6 +73,16 @@ where
     }
 }
 
+// unsure for valid op args
+struct Validity<L, R>
+where
+    L: Component,
+    R: Component,
+{
+    lhs: PhantomData<L>,
+    rhs: PhantomData<R>,
+}
+
 #[cfg(feature = "wsgl")]
 impl<C> Operation<C>
 where

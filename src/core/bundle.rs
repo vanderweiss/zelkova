@@ -12,89 +12,11 @@ use {
 
 use crate::internals::{Buffer, Component};
 
-#[derive(Clone, Copy)]
-pub(crate) enum Binding {
-    Assigned(u32),
-    Hold,
-}
-
-impl Default for Binding {
-    fn default() -> Self {
-        static TRACKER: AtomicU32 = AtomicU32::new(0);
-        let binding = TRACKER.fetch_add(1, Ordering::SeqCst);
-        Binding::Assigned(binding)
-    }
-}
-
-impl Display for Binding {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Binding::Assigned(binding) => write!(f, "{}", binding),
-            Binding::Hold => panic!(),
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-pub(crate) enum Group {
-    Base,
-    Custom(u32),
-}
-
-impl Default for Group {
-    fn default() -> Group {
-        Group::Base
-    }
-}
-
-impl Display for Group {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Group::Base => write!(f, "0"),
-            Group::Custom(group) => write!(f, "{}", group),
-        }
-    }
-}
-
-#[derive(Clone, Copy)]
-pub(crate) enum Length {
-    Sized(usize),
-    Unsized,
-}
-
-impl Display for Length {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Length::Sized(length) => write!(f, "{}", length),
-            Length::Unsized => panic!(),
-        }
-    }
-}
-
-impl PartialEq for Length {
-    fn eq(&self, other: &Self) -> bool {
-        match self {
-            Length::Sized(lhs) => match other {
-                Length::Sized(rhs) => lhs == rhs,
-                Length::Unsized => panic!(),
-            },
-            Length::Unsized => panic!(),
-        }
-    }
-}
-
 #[derive(Clone, Copy, Default)]
 pub(crate) enum State {
     #[default]
     Pending,
     Done,
-}
-
-#[derive(Clone, Copy, Default)]
-pub(crate) enum Storage {
-    #[default]
-    StArray,
-    DyArray,
 }
 
 pub(crate) struct Operation<C>
@@ -126,6 +48,71 @@ where
     }
 }
 
+#[derive(Clone, Copy)]
+pub(crate) enum Binding {
+    Assigned(u32),
+    Hold,
+}
+
+impl Binding {
+    fn fetch(&self) -> u32 {
+        match self {
+            Binding::Assigned(binding) => *binding,
+            Binding::Hold => panic!(),
+        }
+    }
+}
+
+impl Default for Binding {
+    fn default() -> Self {
+        static TRACKER: AtomicU32 = AtomicU32::new(0);
+        let binding = TRACKER.fetch_add(1, Ordering::SeqCst);
+        Binding::Assigned(binding)
+    }
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum Group {
+    Base,
+    Custom(u32),
+}
+
+impl Group {
+    fn fetch(&self) -> u32 {
+        match self {
+            Group::Base => 0,
+            Group::Custom(group) => *group,
+        }
+    }
+}
+
+impl Default for Group {
+    fn default() -> Group {
+        Group::Base
+    }
+}
+
+#[derive(Clone, Copy)]
+pub(crate) enum Length {
+    Sized(usize),
+    Unsized,
+}
+
+impl Length {
+    fn fetch(&self) -> usize {
+        match self {
+            Length::Sized(length) => *length,
+            Length::Unsized => panic!(),
+        }
+    }
+}
+
+impl PartialEq for Length {
+    fn eq(&self, other: &Self) -> bool {
+        self.fetch() == other.fetch()
+    }
+}
+
 pub(crate) enum Init<C>
 where
     C: Component,
@@ -151,6 +138,72 @@ pub(crate) enum Memory {
 }
 
 #[derive(Clone, Copy, Default)]
+pub(crate) enum Storage {
+    #[default]
+    StArray,
+    DyArray,
+}
+
+pub(crate) trait Property {}
+
+impl Property for Binding {}
+impl Property for Group {}
+impl<C: Component> Property for Init<C> {}
+impl Property for Length {}
+impl Property for Storage {}
+
+pub(crate) trait Fetch: Property {
+    type Value;
+    fn fetch(&self) -> Self::Value;
+}
+
+impl Fetch for Binding {
+    type Value = u32;
+    fn fetch(&self) -> Self::Value {
+        match self {
+            Binding::Assigned(binding) => *binding,
+            Binding::Hold => panic!(),
+        }
+    }
+}
+
+impl Fetch for Group {
+    type Value = u32;
+    fn fetch(&self) -> Self::Value {
+        match self {
+            Group::Base => 0,
+            Group::Custom(group) => *group,
+        }
+    }
+}
+
+impl Fetch for Length {
+    type Value = usize;
+    fn fetch(&self) -> Self::Value {
+        match self {
+            Length::Sized(length) => *length,
+            Length::Unsized => 0,
+        }
+    }
+}
+
+macro_rules! impl_display {
+    ($($property:ty, )*) => {$(
+        impl Display for $property {
+            fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+                write!(f, "{}", self.fetch())
+            }
+        }
+    )*}
+}
+
+impl_display! {
+    Binding,
+    Group,
+    Length,
+}
+
+#[derive(Clone, Copy, Default)]
 pub(crate) enum Layout {
     #[default]
     Init,
@@ -166,7 +219,7 @@ where
     pub group: Group,
     pub init: Init<C>,
     pub length: Length,
-    pub memory: Memory,
+    pub storage: Storage,
 }
 
 impl<C> Properties<C>
@@ -180,7 +233,7 @@ where
                 group: Group::default(),
                 init: Init::default(),
                 length: Length::Sized(length),
-                memory: Memory::default(),
+                storage: Storage::default(),
             },
             Layout::Future => Self {
                 binding: Binding::Hold,
@@ -193,11 +246,21 @@ where
                     }
                 },
                 length: Length::Sized(length),
-                memory: Memory::default(),
+                storage: Storage::default(),
             },
-            Layout::Dyn => {
-                panic!()
-            }
+            Layout::Dyn => Self {
+                binding: Binding::Hold,
+                group: Group::default(),
+                init: Init::default(),
+                length: {
+                    if length != 0 {
+                        Length::Sized(length)
+                    } else {
+                        Length::Unsized
+                    }
+                },
+                storage: Storage::DyArray,
+            },
         };
 
         props
@@ -278,6 +341,17 @@ where
 
     pub fn bind_future(length: usize, op: Operation<C>) -> Result<Self, wgpu::Error> {
         let props = Properties::construct(Layout::Future, length, Some(op));
+
+        let bundle = Self {
+            buffer: BufferHolder::new(),
+            props,
+        };
+
+        Ok(bundle)
+    }
+
+    pub fn bind_dyn(length: usize) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(Layout::Dyn, length, None);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
