@@ -14,9 +14,10 @@ use super::Element;
 pub(crate) enum Phase {
     #[default]
     Headers,
-    Open,
     Calls,
+    Open,
     Close,
+    Ready,
 }
 
 pub(crate) struct Module {
@@ -55,16 +56,17 @@ impl Entry for Module {
         for element in elements.iter() {
             _headers += element.tag().as_str();
         }
+        self.phase = Phase::Calls;
     }
 
     fn open(&mut self, workgroup: Workgroup) {
         let Workgroup(x, y, z) = workgroup;
         let _open = format!("@compute @workgroup_size({}, {}, {}) fn main() {{", x, y, z);
-        self.phase = Phase::Open;
+        self.phase = Phase::Close;
     }
 
     fn close(&mut self) {
         let _close = "}";
-        self.phase = Phase::Close;
+        self.phase = Phase::Ready;
     }
 }
