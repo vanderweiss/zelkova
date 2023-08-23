@@ -76,7 +76,6 @@ where
 trait SupportedComponents {}
 
 pub(crate) trait OperationShader {
-    type Target;
     fn add<L, R>(&self, lhs: Box<&dyn BundleShader>, rhs: Box<&dyn BundleShader>);
 }
 

@@ -85,6 +85,25 @@ pub(crate) enum Memory {
 }
 
 #[derive(Clone, Copy, Default)]
+pub(crate) enum Relay {
+    #[default]
+    Skip,
+    Operate,
+    Map,
+}
+
+impl Relay {
+    #[inline]
+    fn exhausted(&self) -> bool {
+        match self {
+            Skip => true,
+            Operate => false,
+            Map => true,
+        }
+    }
+}
+
+#[derive(Clone, Copy, Default)]
 pub(crate) enum Storage {
     #[default]
     StArray,
@@ -104,6 +123,7 @@ impl_property! {
     Dimensions,
     Group,
     Init,
+    Relay,
     Storage,
 }
 
@@ -171,6 +191,7 @@ pub(crate) struct Properties {
     pub dims: Dimensions,
     pub group: Group,
     pub init: Init,
+    pub relay: Relay,
     pub storage: Storage,
 }
 
@@ -178,16 +199,12 @@ impl Properties {
     pub fn construct(layout: Layout, dims: Vec<u32>, op: Option<Operation>) -> Self {
         let props = match layout {
             Layout::Init => Self {
-                binding: Binding::default(),
                 dims: Dimensions::Sized(dims),
-                group: Group::default(),
-                init: Init::default(),
-                storage: Storage::default(),
+                ..Default::default()
             },
             Layout::Future => Self {
                 binding: Binding::Hold,
                 dims: Dimensions::Sized(dims),
-                group: Group::default(),
                 init: {
                     if let Some(op) = op {
                         Init::Future(op)
@@ -195,14 +212,13 @@ impl Properties {
                         panic!()
                     }
                 },
-                storage: Storage::default(),
+                relay: Relay::Operate,
+                ..Default::default()
             },
             Layout::Dyn => Self {
                 binding: Binding::Hold,
-                dims: Dimensions::Unsized,
-                group: Group::default(),
-                init: Init::default(),
                 storage: Storage::DyArray,
+                ..Default::default()
             },
         };
 
@@ -220,6 +236,19 @@ impl Properties {
     #[inline]
     pub fn typename(&self) -> &'static str {
         any::type_name::<C>()
+    }
+}
+
+impl Default for Properties {
+    fn default() -> Self {
+        Self {
+            binding: Binding::default(),
+            dims: Dimensions::Unsized,
+            group: Group::default(),
+            init: Init::default(),
+            relay: Relay::default(),
+            storage: Storage::default(),
+        }
     }
 }
 
