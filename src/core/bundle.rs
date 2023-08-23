@@ -36,45 +36,25 @@ impl Default for Binding {
     }
 }
 
+#[derive(Clone)]
+pub(crate) enum Dimensions {
+    Sized(Vec<u32>),
+    Unsized,
+}
+
+impl Dimensions {}
+
+impl PartialEq for Dimensions {}
+
 #[derive(Clone, Copy)]
 pub(crate) enum Group {
     Base,
     Custom(u32),
 }
 
-impl Group {
-    fn fetch(&self) -> u32 {
-        match self {
-            Group::Base => 0,
-            Group::Custom(group) => *group,
-        }
-    }
-}
-
 impl Default for Group {
     fn default() -> Group {
         Group::Base
-    }
-}
-
-#[derive(Clone)]
-pub(crate) enum Length {
-    Sized(Vec<u32>),
-    Unsized,
-}
-
-impl Length {
-    fn fetch(&self) -> usize {
-        match self {
-            Length::Sized(length) => *length,
-            Length::Unsized => panic!(),
-        }
-    }
-}
-
-impl PartialEq for Length {
-    fn eq(&self, other: &Self) -> bool {
-        self.fetch() == other.fetch()
     }
 }
 
@@ -105,11 +85,19 @@ pub(crate) enum Storage {
 
 pub(crate) trait Property {}
 
-impl Property for Binding {}
-impl Property for Group {}
-impl Property for Init {}
-impl Property for Length {}
-impl Property for Storage {}
+macro_rules! impl_property {
+    ($($property:ty, )*) => {$(
+        impl Property for $property {}
+    )*}
+}
+
+impl_property! {
+    Binding,
+    Dimensions,
+    Group,
+    Init,
+    Storage,
+}
 
 pub(crate) trait Fetch: Property {
     type Value;
@@ -126,6 +114,16 @@ impl Fetch for Binding {
     }
 }
 
+impl Fetch for Dimensions {
+    type Value = usize;
+    fn fetch(&self) -> Self::Value {
+        match self {
+            Dimensions::Sized(dims) => *dims,
+            Dimensions::Unsized => 0,
+        }
+    }
+}
+
 impl Fetch for Group {
     type Value = u32;
     fn fetch(&self) -> Self::Value {
@@ -136,21 +134,11 @@ impl Fetch for Group {
     }
 }
 
-impl Fetch for Length {
-    type Value = usize;
-    fn fetch(&self) -> Self::Value {
-        match self {
-            Length::Sized(length) => *length,
-            Length::Unsized => 0,
-        }
-    }
-}
-
 macro_rules! impl_display {
     ($($property:ty, )*) => {$(
         impl Display for $property {
             fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-                write!(f, "{}", self.fetch())
+                write!(f, "{:?}", self.fetch())
             }
         }
     )*}
@@ -158,8 +146,8 @@ macro_rules! impl_display {
 
 impl_display! {
     Binding,
+    Dimensions,
     Group,
-    Length,
 }
 
 #[derive(Clone, Copy, Default)]
@@ -172,24 +160,25 @@ pub(crate) enum Layout {
 
 pub(crate) struct Properties {
     pub binding: Binding,
+    pub dims: Dimensions,
     pub group: Group,
     pub init: Init,
-    pub length: Length,
     pub storage: Storage,
 }
 
 impl Properties {
-    pub fn construct(layout: Layout, length: usize, op: Option<Operation>) -> Self {
+    pub fn construct(layout: Layout, dims: Vec<u32>, op: Option<Operation>) -> Self {
         let props = match layout {
             Layout::Init => Self {
                 binding: Binding::default(),
+                dims: Dimensions::Sized(dims),
                 group: Group::default(),
                 init: Init::default(),
-                length: Length::Sized(length),
                 storage: Storage::default(),
             },
             Layout::Future => Self {
                 binding: Binding::Hold,
+                dims: Dimensions::Sized(dims),
                 group: Group::default(),
                 init: {
                     if let Some(op) = op {
@@ -198,20 +187,13 @@ impl Properties {
                         panic!()
                     }
                 },
-                length: Length::Sized(length),
                 storage: Storage::default(),
             },
             Layout::Dyn => Self {
                 binding: Binding::Hold,
+                dims: Dimensions::Unsized,
                 group: Group::default(),
                 init: Init::default(),
-                length: {
-                    if length != 0 {
-                        Length::Sized(length)
-                    } else {
-                        Length::Unsized
-                    }
-                },
                 storage: Storage::DyArray,
             },
         };
