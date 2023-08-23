@@ -73,23 +73,16 @@ where
     }
 }
 
-struct OperationComponents<L, R, T>
-where
-    L: Component,
-    R: Component,
-    T: Component;
-
 trait SupportedComponents {}
 
 pub(crate) trait OperationShader {
     type Target;
-
-    fn add<L, R>(lhs: &dyn BundleShader, rhs: &dyn BundleShader) -> Self;
+    fn add<L, R>(&self, lhs: Box<&dyn BundleShader>, rhs: Box<&dyn BundleShader>);
 }
 
 #[cfg(feature = "wsgl")]
 impl OperationShader for Operation {
-    fn add<L, R>(lhs: &dyn BundleShader, rhs: &dyn BundleShader) -> Self
+    fn add<L, R>(&self, lhs: &dyn BundleShader, rhs: &dyn BundleShader)
     where
         L: Component,
         R: Component,
@@ -104,6 +97,6 @@ impl OperationShader for Operation {
 
         let op = Operation::feed(post);
 
-        Bundle::bind_future(0, op)
+        Bundle::bind_future(0, op);
     }
 }

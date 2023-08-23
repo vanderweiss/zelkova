@@ -42,9 +42,17 @@ pub(crate) enum Dimensions {
     Unsized,
 }
 
-impl Dimensions {}
+impl Dimensions {
+    fn collapse(&self) -> u32 {
+        self.fetch().iter().sum()
+    }
+}
 
-impl PartialEq for Dimensions {}
+impl PartialEq for Dimensions {
+    fn eq(&self, other: &Self) -> bool {
+        self.collapse() == other.collapse()
+    }
+}
 
 #[derive(Clone, Copy)]
 pub(crate) enum Group {
@@ -101,14 +109,14 @@ impl_property! {
 
 pub(crate) trait Fetch: Property {
     type Value;
-    fn fetch(&self) -> Self::Value;
+    fn fetch(&self) -> &Self::Value;
 }
 
 impl Fetch for Binding {
     type Value = u32;
-    fn fetch(&self) -> Self::Value {
+    fn fetch(&self) -> &Self::Value {
         match self {
-            Binding::Assigned(binding) => *binding,
+            Binding::Assigned(binding) => binding,
             Binding::Hold => panic!(),
         }
     }
@@ -116,20 +124,20 @@ impl Fetch for Binding {
 
 impl Fetch for Dimensions {
     type Value = usize;
-    fn fetch(&self) -> Self::Value {
+    fn fetch(&self) -> &Self::Value {
         match self {
-            Dimensions::Sized(dims) => *dims,
+            Dimensions::Sized(dims) => dims,
             Dimensions::Unsized => 0,
         }
     }
 }
 
 impl Fetch for Group {
-    type Value = u32;
-    fn fetch(&self) -> Self::Value {
+    type Value = Vec<u32>;
+    fn fetch(&self) -> &Self::Value {
         match self {
             Group::Base => 0,
-            Group::Custom(group) => *group,
+            Group::Custom(group) => group,
         }
     }
 }
