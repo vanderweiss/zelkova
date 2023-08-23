@@ -2,7 +2,6 @@ use {
     std::{
         any,
         fmt::{self, Display, Formatter},
-        marker::PhantomData,
         mem::MaybeUninit,
         ops::{Deref, DerefMut},
         sync::atomic::{AtomicU32, Ordering},
@@ -12,41 +11,7 @@ use {
 
 use crate::internals::{Buffer, Component};
 
-#[derive(Clone, Copy, Default)]
-pub(crate) enum State {
-    #[default]
-    Pending,
-    Done,
-}
-
-pub(crate) struct Operation<C>
-where
-    C: Component,
-{
-    op: String,
-    state: State,
-    ty: PhantomData<C>,
-}
-
-impl<C> Operation<C>
-where
-    C: Component,
-{
-    pub fn feed(op: String) -> Self {
-        Self {
-            op,
-            state: State::default(),
-            ty: PhantomData,
-        }
-    }
-
-    pub fn resolved(&self) -> bool {
-        match self.state {
-            State::Pending => false,
-            State::Done => true,
-        }
-    }
-}
+use super::Operation;
 
 #[derive(Clone, Copy)]
 pub(crate) enum Binding {
@@ -92,9 +57,9 @@ impl Default for Group {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(crate) enum Length {
-    Sized(usize),
+    Sized(Vec<u32>),
     Unsized,
 }
 
@@ -113,18 +78,12 @@ impl PartialEq for Length {
     }
 }
 
-pub(crate) enum Init<C>
-where
-    C: Component,
-{
+pub(crate) enum Init {
     Result,
-    Future(Operation<C>),
+    Future(Operation),
 }
 
-impl<C> Default for Init<C>
-where
-    C: Component,
-{
+impl Default for Init {
     fn default() -> Self {
         Init::Result
     }
@@ -148,7 +107,7 @@ pub(crate) trait Property {}
 
 impl Property for Binding {}
 impl Property for Group {}
-impl<C: Component> Property for Init<C> {}
+impl Property for Init {}
 impl Property for Length {}
 impl Property for Storage {}
 
@@ -211,22 +170,16 @@ pub(crate) enum Layout {
     Dyn,
 }
 
-pub(crate) struct Properties<C>
-where
-    C: Component,
-{
+pub(crate) struct Properties {
     pub binding: Binding,
     pub group: Group,
-    pub init: Init<C>,
+    pub init: Init,
     pub length: Length,
     pub storage: Storage,
 }
 
-impl<C> Properties<C>
-where
-    C: Component,
-{
-    pub fn construct(layout: Layout, length: usize, op: Option<Operation<C>>) -> Self {
+impl Properties {
+    pub fn construct(layout: Layout, length: usize, op: Option<Operation>) -> Self {
         let props = match layout {
             Layout::Init => Self {
                 binding: Binding::default(),
@@ -321,7 +274,7 @@ where
     C: Component,
 {
     pub buffer: BufferHolder,
-    pub props: Properties<C>,
+    pub props: Properties,
 }
 
 impl<C> Bundle<C>
@@ -339,7 +292,7 @@ where
         Ok(bundle)
     }
 
-    pub fn bind_future(length: usize, op: Operation<C>) -> Result<Self, wgpu::Error> {
+    pub fn bind_future(length: usize, op: Operation) -> Result<Self, wgpu::Error> {
         let props = Properties::construct(Layout::Future, length, Some(op));
 
         let bundle = Self {

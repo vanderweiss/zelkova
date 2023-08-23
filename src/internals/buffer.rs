@@ -6,7 +6,7 @@ use {
 
 use super::Handler;
 
-mod _sealed {
+pub(crate) mod _sealed {
     pub trait Sealed {}
 }
 

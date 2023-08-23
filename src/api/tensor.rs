@@ -7,18 +7,13 @@ use crate::{core::Bundle, internals::Component};
 /// Denoting shape a.k.a. dimensions of a tensor.
 #[derive(PartialEq, Eq, Debug)]
 pub enum TensorOrder {
-    /// Tensors collapsed of implied dimensionality.
     Scalar,
-    /// Tensors of 1D.
     Vector(u64),
-    /// Tensors of 2D.
     Matrix(u64, u64),
-    /// Tensors of 3D.
     Cube(u64, u64, u64),
 }
 
 impl TensorOrder {
-    /// Matches shape to its own product.
     #[inline]
     pub fn size(&self) -> u64 {
         match self {
@@ -29,8 +24,6 @@ impl TensorOrder {
         }
     }
 
-    /// Checks for a square tensor, originally corresponding to the 2D space,
-    /// now expanded upon higher dimensionality as a property.
     #[inline]
     pub fn square(&self) -> bool {
         match self {
@@ -62,6 +55,7 @@ impl fmt::Display for TensorOrder {
     }
 }
 
+/// Source container of a tensor, either owned or referenced
 pub(crate) struct TensorMeta<'s, C: Component, const N: usize> {
     src: Option<&'s [C]>,
     per: Option<Vec<C>>,
@@ -102,6 +96,7 @@ pub struct Tensor<'s, C: Component, const N: usize> {
 }
 
 impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
+    #[inline]
     fn _fetch(&self) -> &Bundle<C> {
         &self.bundle
     }
@@ -129,10 +124,7 @@ impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
     }
 
     pub fn cast<T: Component>(&mut self) {}
-
-    /// hyperdeterminant for 3D+
     pub fn determinant(&self) {}
-
     pub fn inverse(&self) {}
 }
 
@@ -159,8 +151,6 @@ impl_ops! {
     Div div,
 }
 
-// vec! but tensor, limited to second rank
-#[doc(hidden)]
 #[macro_export]
 macro_rules! tsr {
 

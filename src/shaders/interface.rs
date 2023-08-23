@@ -9,7 +9,7 @@ use crate::{
     internals::Component,
 };
 
-pub(crate) trait Element {
+pub(crate) trait BundleShader {
     fn alias(&self) -> String;
     fn mode(&self) -> &'static str;
     fn space(&self) -> &'static str;
@@ -18,7 +18,7 @@ pub(crate) trait Element {
 }
 
 #[cfg(feature = "wsgl")]
-impl<C> Element for Bundle<C>
+impl<C> BundleShader for Bundle<C>
 where
     C: Component,
 {
@@ -73,22 +73,23 @@ where
     }
 }
 
-// unsure for valid op args
-struct Validity<L, R>
+struct OperationComponents<L, R, T>
 where
     L: Component,
     R: Component,
-{
-    lhs: PhantomData<L>,
-    rhs: PhantomData<R>,
+    T: Component;
+
+trait SupportedComponents {}
+
+pub(crate) trait OperationShader {
+    type Target;
+
+    fn add<L, R>(lhs: &dyn BundleShader, rhs: &dyn BundleShader) -> Self;
 }
 
 #[cfg(feature = "wsgl")]
-impl<C> Operation<C>
-where
-    C: Component,
-{
-    pub fn add<L, R>(lhs: &Bundle<L>, rhs: &Bundle<R>) -> Result<Bundle<C>, wgpu::Error>
+impl OperationShader for Operation {
+    fn add<L, R>(lhs: &dyn BundleShader, rhs: &dyn BundleShader) -> Self
     where
         L: Component,
         R: Component,
