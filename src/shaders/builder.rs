@@ -42,15 +42,15 @@ impl Module {
 pub(crate) struct Workgroup(u32, u32, u32);
 
 pub(crate) trait Entry {
-    fn headers(&mut self, elements: &[Box<&dyn BundleShader>]);
-    fn calls<T>(&mut self, ops: &[&dyn OperationShader<Target = T>]);
+    fn headers(&mut self, elements: &[&impl BundleShader]);
+    fn calls(&mut self, ops: &[&impl OperationShader]);
     fn open(&mut self, workgroup: Workgroup);
     fn close(&mut self);
 }
 
 #[cfg(feature = "wsgl")]
 impl Entry for Module {
-    fn headers(&mut self, elements: &[Box<&dyn BundleShader>]) {
+    fn headers(&mut self, elements: &[&impl BundleShader]) {
         let mut _headers = String::new();
         for element in elements.iter() {
             _headers += element.tag().as_str();
@@ -58,7 +58,7 @@ impl Entry for Module {
         self.phase = Phase::Calls;
     }
 
-    fn calls<T>(&mut self, ops: &[Box<&dyn OperationShader<Target = T>>]) {}
+    fn calls(&mut self, ops: &[&impl OperationShader]) {}
 
     fn open(&mut self, workgroup: Workgroup) {
         let Workgroup(x, y, z) = workgroup;

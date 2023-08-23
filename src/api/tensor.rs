@@ -1,61 +1,47 @@
 // High level user API, exposed as it acts as the toolkit itself
 
-use std::{fmt, ops};
+use std::{
+    fmt::{self, Debug, Display},
+    ops,
+};
 
 use crate::{core::Bundle, internals::Component};
 
-/// Denoting shape a.k.a. dimensions of a tensor.
-#[derive(PartialEq, Eq, Debug)]
-pub enum TensorOrder {
-    Scalar,
-    Vector(u64),
-    Matrix(u64, u64),
-    Cube(u64, u64, u64),
+/// Denoting shape a.k.a. dimensions of a `Tensor`'s `TensorMeta`.
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct TensorOrder {
+    src: Vec<usize>,
 }
 
 impl TensorOrder {
     #[inline]
-    pub fn size(&self) -> u64 {
-        match self {
-            Self::Scalar => 1,
-            Self::Vector(x) => x * 1,
-            Self::Matrix(x, y) => x * y,
-            Self::Cube(x, y, z) => x * y * z,
-        }
+    fn fetch(&self) -> &Vec<usize> {
+        &self.src
+    }
+
+    #[inline]
+    pub fn count(&self) -> usize {
+        self.src.iter().sum()
+    }
+
+    #[inline]
+    pub fn size(&self) -> usize {
+        self.src.iter().product()
     }
 
     #[inline]
     pub fn square(&self) -> bool {
-        match self {
-            Self::Scalar => false,
-            Self::Vector(_) => false,
-            Self::Matrix(x, y) => x == y,
-            Self::Cube(x, y, z) => (x == y) && (y == z),
-        }
+        self.src.iter().all(|dim| dim == &self.src[0])
     }
 }
 
-impl fmt::Display for TensorOrder {
-    #[inline]
+impl Display for TensorOrder {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Scalar => {
-                write!(f, "Tensor has implied shape.")
-            }
-            Self::Vector(x) => {
-                write!(f, "Tensor has shape ({})", x)
-            }
-            Self::Matrix(x, y) => {
-                write!(f, "Tensor has shape ({}, {})", x, y)
-            }
-            Self::Cube(x, y, z) => {
-                write!(f, "Tensor has shape ({}, {}, {})", x, y, z)
-            }
-        }
+        write!(f, "Tensor of shape: {:?}.", self.src)
     }
 }
 
-/// Source container of a tensor, either owned or referenced
+/// Source container of a `Tensor`'s data, either owned or referenced
 pub(crate) struct TensorMeta<'s, C: Component, const N: usize> {
     src: Option<&'s [C]>,
     per: Option<Vec<C>>,
@@ -89,7 +75,7 @@ pub struct Tensor<'s, C: Component, const N: usize> {
     pub order: TensorOrder,
 
     #[doc(hidden)]
-    bundle: Bundle<C>,
+    bundle: Bundle,
 
     #[doc(hidden)]
     meta: TensorMeta<'s, C, N>,
@@ -97,12 +83,12 @@ pub struct Tensor<'s, C: Component, const N: usize> {
 
 impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
     #[inline]
-    fn _fetch(&self) -> &Bundle<C> {
+    fn _fetch(&self) -> &Bundle {
         &self.bundle
     }
 
     pub fn from_array(_src: [C; N], order: TensorOrder) -> Self {
-        let bundle = Bundle::bind_init(N).unwrap();
+        let bundle = Bundle::bind_init(order.fetch()).unwrap();
         let meta = TensorMeta::from_persist(_src);
 
         Self {
@@ -113,7 +99,7 @@ impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
     }
 
     pub fn from_slice(_src: &'s [C], order: TensorOrder) -> Self {
-        let bundle = Bundle::bind_init(_src.len()).unwrap();
+        let bundle = Bundle::bind_init(order.fetch()).unwrap();
         let meta = TensorMeta::from_reference(_src);
 
         Self {
@@ -126,9 +112,14 @@ impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
     pub fn cast<T: Component>(&mut self) {}
     pub fn determinant(&self) {}
     pub fn inverse(&self) {}
+
+    /// Denotes a `TensorMeta` of valid slots, initialized.
+    pub fn ready(&self) -> bool {
+        let (src, per) = self.meta.slots();
+        src || per
+    }
 }
 
-#[doc(hidden)]
 macro_rules! impl_ops {
     ( $ ( $trait:ident $fn:ident, )* ) => {
         $ (
@@ -157,7 +148,7 @@ macro_rules! tsr {
     ( $root:literal $ (, $next:literal )* $(,)? ) => {
         {
             let _src = [$root $ (, $next )*];
-            let order = TensorOrder::Vector(_src.len() as u64);
+            let order = TensorOrder::Vector(vec![_src.len() as u64]);
             Tensor::from_array(_tensor, raw)
         }
 
@@ -183,7 +174,7 @@ macro_rules! tsr {
                 )*
             ];
 
-            let order = TensorOrder::Matrix(x as u64, y as u64);
+            let order = TensorOrder::Matrix(vec![x, y]);
             Tensor::from_array(_src, order)
         }
     };

@@ -18,10 +18,7 @@ pub(crate) trait BundleShader {
 }
 
 #[cfg(feature = "wsgl")]
-impl<C> BundleShader for Bundle<C>
-where
-    C: Component,
-{
+impl BundleShader for Bundle {
     #[inline]
     fn alias(&self) -> String {
         format!("tsr{}", self.props.typename())
@@ -37,6 +34,7 @@ where
         self.specifier().0
     }
 
+    #[inline]
     fn specifier(&self) -> (&'static str, &'static str) {
         if self.buffer.is_uniform() {
             ("uniform", "read")
@@ -62,7 +60,7 @@ where
                     "{0}: array<{1}, {2}>",
                     pre,
                     self.props.typename(),
-                    self.props.length,
+                    self.props.dims,
                 )
             } else {
                 format!("{0}: array<{1}>", pre, self.props.typename())
@@ -76,12 +74,12 @@ where
 trait SupportedComponents {}
 
 pub(crate) trait OperationShader {
-    fn add<L, R>(&self, lhs: Box<&dyn BundleShader>, rhs: Box<&dyn BundleShader>);
+    fn add<L, R>(&self, lhs: &impl BundleShader, rhs: &impl BundleShader);
 }
 
 #[cfg(feature = "wsgl")]
 impl OperationShader for Operation {
-    fn add<L, R>(&self, lhs: &dyn BundleShader, rhs: &dyn BundleShader)
+    fn add<L, R>(&self, lhs: &impl BundleShader, rhs: &impl BundleShader)
     where
         L: Component,
         R: Component,
@@ -98,4 +96,18 @@ impl OperationShader for Operation {
 
         Bundle::bind_future(0, op);
     }
+}
+
+#[cfg(feature = "wsgl")]
+macro_rules! impl_arithmetic {
+    ($($op:ident, $fn:ident, )*) => {$(
+        impl OperationShader for Operation {
+            fn $fn<L, R>(&self, lhs: &impl BundleShader, rhs: &impl BundleShader)
+            where
+                L: Component,
+                R: Component,
+            {
+            }
+        }
+    )*}
 }

@@ -36,22 +36,10 @@ impl Default for Binding {
     }
 }
 
-#[derive(Clone)]
+#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) enum Dimensions {
-    Sized(Vec<u32>),
+    Sized(Vec<usize>),
     Unsized,
-}
-
-impl Dimensions {
-    fn collapse(&self) -> u32 {
-        self.fetch().iter().sum()
-    }
-}
-
-impl PartialEq for Dimensions {
-    fn eq(&self, other: &Self) -> bool {
-        self.collapse() == other.collapse()
-    }
 }
 
 #[derive(Clone, Copy)]
@@ -129,14 +117,16 @@ impl_property! {
 
 pub(crate) trait Fetch: Property {
     type Value;
-    fn fetch(&self) -> &Self::Value;
+    fn fetch(&self) -> Self::Value;
 }
 
 impl Fetch for Binding {
     type Value = u32;
-    fn fetch(&self) -> &Self::Value {
+
+    #[inline]
+    fn fetch(&self) -> Self::Value {
         match self {
-            Binding::Assigned(binding) => binding,
+            Binding::Assigned(binding) => *binding,
             Binding::Hold => panic!(),
         }
     }
@@ -144,20 +134,24 @@ impl Fetch for Binding {
 
 impl Fetch for Dimensions {
     type Value = usize;
-    fn fetch(&self) -> &Self::Value {
+
+    #[inline]
+    fn fetch(&self) -> Self::Value {
         match self {
-            Dimensions::Sized(dims) => dims,
+            Dimensions::Sized(dims) => dims.iter().sum(),
             Dimensions::Unsized => 0,
         }
     }
 }
 
 impl Fetch for Group {
-    type Value = Vec<u32>;
-    fn fetch(&self) -> &Self::Value {
+    type Value = u32;
+
+    #[inline]
+    fn fetch(&self) -> Self::Value {
         match self {
             Group::Base => 0,
-            Group::Custom(group) => group,
+            Group::Custom(group) => *group,
         }
     }
 }
@@ -196,7 +190,7 @@ pub(crate) struct Properties {
 }
 
 impl Properties {
-    pub fn construct(layout: Layout, dims: Vec<u32>, op: Option<Operation>) -> Self {
+    pub fn construct(layout: Layout, dims: Vec<usize>, op: Option<Operation>) -> Self {
         let props = match layout {
             Layout::Init => Self {
                 dims: Dimensions::Sized(dims),
@@ -288,20 +282,14 @@ impl DerefMut for BufferHolder {
 /// Interface on top of the toolkit's wrapper for buffers, used for shader generation and extends
 /// to other api-related structures.
 
-pub(crate) struct Bundle<C>
-where
-    C: Component,
-{
+pub(crate) struct Bundle {
     pub buffer: BufferHolder,
     pub props: Properties,
 }
 
-impl<C> Bundle<C>
-where
-    C: Component,
-{
-    pub fn bind_init(length: usize) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(Layout::default(), length, None);
+impl Bundle {
+    pub fn bind_init(dims: Vec<usize>) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(Layout::default(), dims, None);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
@@ -311,8 +299,8 @@ where
         Ok(bundle)
     }
 
-    pub fn bind_future(length: usize, op: Operation) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(Layout::Future, length, Some(op));
+    pub fn bind_future(dims: Vec<usize>, op: Operation) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(Layout::Future, dims, Some(op));
 
         let bundle = Self {
             buffer: BufferHolder::new(),
@@ -322,8 +310,8 @@ where
         Ok(bundle)
     }
 
-    pub fn bind_dyn(length: usize) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(Layout::Dyn, length, None);
+    pub fn bind_dyn(dims: Vec<usize>) -> Result<Self, wgpu::Error> {
+        let props = Properties::construct(Layout::Dyn, dims, None);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
