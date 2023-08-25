@@ -49,7 +49,7 @@ impl Buffer {
         _content: Option<&[C]>,
         _size: Option<u64>,
     ) -> Result<Self, wgpu::Error> {
-        let _buffer = unsafe {
+        let _buffer = {
             match ty {
                 BufferType::Init => handler.alloc_buffer_init({
                     if let Some(content) = _content {
