@@ -75,7 +75,7 @@ pub struct Tensor<'s, C: Component, const N: usize> {
     pub order: TensorOrder,
 
     #[doc(hidden)]
-    bundle: Bundle,
+    bundle: Bundle<C>,
 
     #[doc(hidden)]
     meta: TensorMeta<'s, C, N>,
@@ -83,7 +83,7 @@ pub struct Tensor<'s, C: Component, const N: usize> {
 
 impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
     #[inline]
-    fn _fetch(&self) -> &Bundle {
+    fn _fetch(&self) -> &Bundle<C> {
         &self.bundle
     }
 

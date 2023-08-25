@@ -2,6 +2,7 @@ use {
     std::{
         any,
         fmt::{self, Display, Formatter},
+        marker::PhantomData,
         mem::MaybeUninit,
         ops::{Deref, DerefMut},
         sync::atomic::{AtomicU32, Ordering},
@@ -282,42 +283,75 @@ impl DerefMut for BufferHolder {
 /// Interface on top of the toolkit's wrapper for buffers, used for shader generation and extends
 /// to other api-related structures.
 
-pub(crate) struct Bundle {
+pub(crate) struct Bundle<C>
+where
+    C: Component,
+{
     pub buffer: BufferHolder,
+    pub layout: Layout,
     pub props: Properties,
+
+    target: PhantomData<C>,
 }
 
-impl Bundle {
+impl<C> Bundle<C>
+where
+    C: Component,
+{
     pub fn bind_init(dims: Vec<usize>) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(Layout::default(), dims, None);
+        let layout = Layout::default();
+        let props = Properties::construct(layout, dims, None);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
+            layout,
             props,
+            target: PhantomData,
         };
 
         Ok(bundle)
     }
 
     pub fn bind_future(dims: Vec<usize>, op: Operation) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(Layout::Future, dims, Some(op));
+        let layout = Layout::Future;
+        let props = Properties::construct(layout, dims, Some(op));
 
         let bundle = Self {
             buffer: BufferHolder::new(),
+            layout,
             props,
+            target: PhantomData,
         };
 
         Ok(bundle)
     }
 
     pub fn bind_dyn(dims: Vec<usize>) -> Result<Self, wgpu::Error> {
-        let props = Properties::construct(Layout::Dyn, dims, None);
+        let layout = Layout::Dyn;
+        let props = Properties::construct(layout, dims, None);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
+            layout,
             props,
+            target: PhantomData,
         };
 
         Ok(bundle)
+    }
+
+    /// Map to CPU and update if requested.
+    fn map(&self) {}
+
+    /// Retrieve values if dynamic.
+    fn poll(&mut self) {
+        match self.layout {
+            Layout::Dyn => {}
+            _ => {}
+        }
+    }
+
+    fn typename(&self) -> &'static str {
+        any::type_name::<C>()
     }
 }
