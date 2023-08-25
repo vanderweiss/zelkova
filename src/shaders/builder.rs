@@ -7,6 +7,7 @@ use std::{
 };
 
 use super::{BundleShader, OperationShader};
+use crate::core::{Bundle, Operation};
 
 #[derive(Clone, Copy, Default)]
 pub(crate) enum Phase {
@@ -41,24 +42,33 @@ impl Module {
 #[derive(Clone, Copy)]
 pub(crate) struct Workgroup(u32, u32, u32);
 
-pub(crate) trait Entry {
-    fn headers(&mut self, elements: &[&impl BundleShader]);
-    fn calls(&mut self, ops: &[&impl OperationShader]);
+impl Default for Workgroup {
+    fn default() -> Self {
+        Self(1, 1, 1)
+    }
+}
+
+pub(crate) trait ShaderCore {
+    fn headers(&mut self, elements: &[&Bundle]);
+    fn calls(&mut self, ops: &[&Operation]);
     fn open(&mut self, workgroup: Workgroup);
     fn close(&mut self);
 }
 
 #[cfg(feature = "wsgl")]
-impl Entry for Module {
-    fn headers(&mut self, elements: &[&impl BundleShader]) {
+impl ShaderCore for Module {
+    fn headers(&mut self, bundles: &[&Bundle]) {
         let mut _headers = String::new();
-        for element in elements.iter() {
-            _headers += element.tag().as_str();
+        for bundle in bundles.iter() {
+            _headers += bundle.tag().as_str();
         }
         self.phase = Phase::Calls;
     }
 
-    fn calls(&mut self, ops: &[&impl OperationShader]) {}
+    fn calls(&mut self, ops: &[&Operation]) {
+        let mut _calls = String::new();
+        for op in ops.iter() {}
+    }
 
     fn open(&mut self, workgroup: Workgroup) {
         let Workgroup(x, y, z) = workgroup;

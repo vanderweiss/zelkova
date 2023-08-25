@@ -72,7 +72,7 @@ impl Handler {
         Ok((module, pipeline))
     }
 
-    pub fn alloc_buffer_factor(&self, contents: &[u8]) -> Result<wgpu::Buffer, wgpu::Error> {
+    pub fn alloc_buffer_init(&self, contents: &[u8]) -> Result<wgpu::Buffer, wgpu::Error> {
         let usage = wgpu::BufferUsages::STORAGE
             | wgpu::BufferUsages::COPY_SRC
             | wgpu::BufferUsages::COPY_DST;
@@ -88,8 +88,7 @@ impl Handler {
         Ok(buffer)
     }
 
-    pub fn alloc_buffer_staging(&self, size: usize) -> Result<wgpu::Buffer, wgpu::Error> {
-        let size = size as u64;
+    pub fn alloc_buffer_map(&self, size: u64) -> Result<wgpu::Buffer, wgpu::Error> {
         let usage = wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST;
 
         let buffer = self.device.create_buffer(&wgpu::BufferDescriptor {

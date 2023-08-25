@@ -26,10 +26,12 @@ impl_component! {
     f32 f64
 }
 
-/// Identifiers for buffer usage
+/// Identifiers for `Buffer`s
+#[derive(Clone, Copy, Default)]
 pub(crate) enum BufferType {
-    Staging,
-    Factor,
+    #[default]
+    Init,
+    Map,
 }
 
 /// Abstraction layer for wgpu::Buffer.
@@ -44,16 +46,25 @@ impl Buffer {
     pub fn bind<C: Component>(
         handler: Handler,
         ty: BufferType,
-        content: Option<&[C]>,
+        _content: Option<&[C]>,
+        _size: Option<u64>,
     ) -> Result<Self, wgpu::Error> {
-        let _buffer = {
+        let _buffer = unsafe {
             match ty {
-                BufferType::Factor => {
-                    handler.alloc_buffer_factor(bytemuck::cast_slice::<C, u8>(unsafe {
-                        content.unwrap_unchecked()
-                    }))?
-                }
-                BufferType::Staging => handler.alloc_buffer_staging(mem::size_of::<C>())?,
+                BufferType::Init => handler.alloc_buffer_init({
+                    if let Some(content) = _content {
+                        bytemuck::cast_slice::<C, u8>(content)
+                    } else {
+                        panic!()
+                    }
+                })?,
+                BufferType::Map => handler.alloc_buffer_map({
+                    if let Some(size) = _size {
+                        size
+                    } else {
+                        mem::size_of::<C> as u64
+                    }
+                })?,
             }
         };
 
