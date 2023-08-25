@@ -335,6 +335,11 @@ where
         Ok(bundle)
     }
 
+    #[inline]
+    pub fn typename(&self) -> &'static str {
+        any::type_name::<C>()
+    }
+
     /// Map to CPU and update if requested.
     fn map(&self) {}
 
@@ -344,10 +349,5 @@ where
             Layout::Dyn => {}
             _ => {}
         }
-    }
-
-    #[inline]
-    fn typename(&self) -> &'static str {
-        any::type_name::<C>()
     }
 }

@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
-    fmt::{Display, Formatter, Write},
-    marker::PhantomData,
+    fmt::{Formatter, Write},
 };
 
 use crate::{
@@ -18,7 +17,10 @@ pub(crate) trait BundleShader {
 }
 
 #[cfg(feature = "wsgl")]
-impl BundleShader for Bundle {
+impl<C> BundleShader for Bundle<C>
+where
+    C: Component,
+{
     #[inline]
     fn alias(&self) -> String {
         format!("tsr{}", self.props.typename())
@@ -59,11 +61,11 @@ impl BundleShader for Bundle {
                 format!(
                     "{0}: array<{1}, {2}>",
                     pre,
-                    self.props.typename(),
+                    self.typename(),
                     self.props.dims,
                 )
             } else {
-                format!("{0}: array<{1}>", pre, self.props.typename())
+                format!("{0}: array<{1}>", pre, self.typename())
             }
         };
 
@@ -79,7 +81,7 @@ pub(crate) trait OperationShader {
 
 #[cfg(feature = "wsgl")]
 impl OperationShader for Operation {
-    fn add<L, R>(&self, lhs: &impl BundleShader, rhs: &impl BundleShader)
+    fn add<L, R>(&self, lhs: &Bundle<L>, rhs: &Bundle<R>)
     where
         L: Component,
         R: Component,
@@ -102,7 +104,7 @@ impl OperationShader for Operation {
 macro_rules! impl_arithmetic {
     ($($op:ident, $fn:ident, )*) => {$(
         impl OperationShader for Operation {
-            fn $fn<L, R>(&self, lhs: &impl BundleShader, rhs: &impl BundleShader)
+            fn $fn<L, R>(&self, lhs: &Bundle<L>, rhs: &Bundle<R>)
             where
                 L: Component,
                 R: Component,
