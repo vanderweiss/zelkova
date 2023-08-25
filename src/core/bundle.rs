@@ -227,11 +227,6 @@ impl Properties {
             Init::Future(ref op) => op.resolved(),
         }
     }
-
-    #[inline]
-    pub fn typename(&self) -> &'static str {
-        any::type_name::<C>()
-    }
 }
 
 impl Default for Properties {
@@ -351,6 +346,7 @@ where
         }
     }
 
+    #[inline]
     fn typename(&self) -> &'static str {
         any::type_name::<C>()
     }
