@@ -49,15 +49,15 @@ impl Default for Workgroup {
 }
 
 pub(crate) trait ShaderCore {
-    fn headers(&mut self, elements: &[&Bundle]);
-    fn calls(&mut self, ops: &[&Operation]);
+    fn headers(&mut self, elements: &[&dyn BundleShader]);
+    fn calls(&mut self, ops: &[&dyn OperationShader]);
     fn open(&mut self, workgroup: Workgroup);
     fn close(&mut self);
 }
 
 #[cfg(feature = "wsgl")]
 impl ShaderCore for Module {
-    fn headers(&mut self, bundles: &[&Bundle]) {
+    fn headers(&mut self, bundles: &[&dyn BundleShader]) {
         let mut _headers = String::new();
         for bundle in bundles.iter() {
             _headers += bundle.tag().as_str();
@@ -65,14 +65,17 @@ impl ShaderCore for Module {
         self.phase = Phase::Calls;
     }
 
-    fn calls(&mut self, ops: &[&Operation]) {
+    fn calls(&mut self, ops: &[&dyn OperationShader]) {
         let mut _calls = String::new();
         for op in ops.iter() {}
     }
 
     fn open(&mut self, workgroup: Workgroup) {
         let Workgroup(x, y, z) = workgroup;
-        let _open = format!("@compute @workgroup_size({}, {}, {}) fn main() {{", x, y, z);
+        let _open = format!(
+            "@compute @workgroup_size({}, {}, {}) fn main(@builtin(global_invocation_id) index: vec3<u32>) {{"
+            , x, y, z
+        );
         self.phase = Phase::Close;
     }
 

@@ -23,7 +23,7 @@ where
 {
     #[inline]
     fn alias(&self) -> String {
-        format!("tsr{}", self.props.typename())
+        format!("tsr_{}_{}", self.typename(), self.props.binding)
     }
 
     #[inline]
@@ -49,11 +49,12 @@ where
 
     fn tag(&self) -> String {
         let pre = format!(
-            "group({0}) binding({1}) var<{2}, {3}> tsr{2}>",
+            "group({}) binding({}) var<{}, {}> {}",
             self.props.group,
             self.props.binding,
             self.space(),
             self.mode(),
+            self.alias(),
         );
 
         let post = {
@@ -76,40 +77,25 @@ where
 trait SupportedComponents {}
 
 pub(crate) trait OperationShader {
-    fn add<L, R>(&self, lhs: &Bundle<L>, rhs: &Bundle<R>);
+    fn add(&self, lhs: &dyn BundleShader, rhs: &dyn BundleShader);
 }
 
 #[cfg(feature = "wsgl")]
 impl OperationShader for Operation {
-    fn add<L, R>(&self, lhs: &Bundle<L>, rhs: &Bundle<R>)
-    where
-        L: Component,
-        R: Component,
-    {
-        let post = {
-            if lhs.props.length == rhs.props.length {
-                String::new()
-            } else {
-                panic!()
-            }
-        };
-
-        let op = Operation::feed(post);
-
-        Bundle::bind_future(0, op);
+    fn add(&self, lhs: &dyn BundleShader, rhs: &dyn BundleShader) {
+        format!("fn add() {}");
     }
 }
 
+/*
 #[cfg(feature = "wsgl")]
 macro_rules! impl_arithmetic {
     ($($op:ident, $fn:ident, )*) => {$(
         impl OperationShader for Operation {
             fn $fn<L, R>(&self, lhs: &Bundle<L>, rhs: &Bundle<R>)
-            where
-                L: Component,
-                R: Component,
             {
             }
         }
     )*}
 }
+*/
