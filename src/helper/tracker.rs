@@ -1,6 +1,6 @@
 use std::sync::atomic::{AtomicU32, Ordering};
 
-// maybe future impl for `Tracker` through `Arc<Mutex<Tracker>>, eh`
+// maybe future impl for `Tracker` through `Arc<Mutex<Tracker>>`, eh
 pub(crate) struct History<'t, T> {
     history: Vec<&'t T>,
 }
