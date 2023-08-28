@@ -3,8 +3,9 @@
 
 #![allow(non_upper_case_globals)]
 
-pub(crate) mod api;
+pub mod api;
 pub(crate) mod core;
+pub(crate) mod helper;
 pub(crate) mod internals;
 pub(crate) mod shaders;
 

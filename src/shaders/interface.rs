@@ -76,7 +76,7 @@ where
 trait SupportedComponents {}
 
 pub(crate) trait OperationShader {
-    fn add<L, R>(&self, lhs: &impl BundleShader, rhs: &impl BundleShader);
+    fn add<L, R>(&self, lhs: &Bundle<L>, rhs: &Bundle<R>);
 }
 
 #[cfg(feature = "wsgl")]
