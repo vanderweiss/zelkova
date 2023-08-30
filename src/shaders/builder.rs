@@ -2,7 +2,7 @@
 
 use std::{
     borrow::Cow,
-    fmt::{Display, Formatter, Write},
+    fmt::{self, Display, Write},
     mem,
 };
 
@@ -13,9 +13,7 @@ use crate::core::{Bundle, Operation};
 pub(crate) enum Phase {
     #[default]
     Headers,
-    Calls,
-    Open,
-    Close,
+    Compute,
     Ready,
 }
 
@@ -39,48 +37,32 @@ impl Module {
     }
 }
 
-#[derive(Clone, Copy)]
-pub(crate) struct Workgroup(u32, u32, u32);
+// new impl on `core` module
+#[derive(Clone)]
+pub(crate) struct Workgroup(Vec<u32>);
 
-impl Default for Workgroup {
-    fn default() -> Self {
-        Self(1, 1, 1)
+impl Display for Workgroup {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        format!()
     }
 }
 
 pub(crate) trait ShaderCore {
-    fn headers(&mut self, elements: &[&dyn BundleShader]);
-    fn calls(&mut self, ops: &[&dyn OperationShader]);
-    fn open(&mut self, workgroup: Workgroup);
-    fn close(&mut self);
+    fn insert_header(&mut self, elements: &dyn BundleShader);
+    fn insert_compute(&mut self, op: &dyn OperationShader);
 }
 
 #[cfg(feature = "wsgl")]
 impl ShaderCore for Module {
-    fn headers(&mut self, bundles: &[&dyn BundleShader]) {
+    fn insert_header(&mut self, bundle: &dyn BundleShader) {
         let mut _headers = String::new();
         for bundle in bundles.iter() {
             _headers += bundle.tag().as_str();
         }
-        self.phase = Phase::Calls;
     }
 
-    fn calls(&mut self, ops: &[&dyn OperationShader]) {
+    fn insert_compute(&mut self, op: &dyn OperationShader, workgroup: Workgroup) {
         let mut _calls = String::new();
         for op in ops.iter() {}
-    }
-
-    fn open(&mut self, workgroup: Workgroup) {
-        let Workgroup(x, y, z) = workgroup;
-        let _open = format!(
-            "@compute @workgroup_size({}, {}, {}) fn main(@builtin(global_invocation_id) index: vec3<u32>) {{"
-            , x, y, z
-        );
-        self.phase = Phase::Close;
-    }
-
-    fn close(&mut self) {
-        let _close = "}";
-        self.phase = Phase::Ready;
     }
 }

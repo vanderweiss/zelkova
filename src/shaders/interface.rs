@@ -74,6 +74,7 @@ where
     }
 }
 
+// will be moved to `core` module
 trait SupportedComponents {}
 
 pub(crate) trait OperationShader {
