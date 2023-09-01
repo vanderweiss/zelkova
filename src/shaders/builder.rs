@@ -35,25 +35,36 @@ impl Module {
     pub fn wrap(&self) -> Cow<'_, str> {
         Cow::from(self.content.as_str())
     }
+
+    #[inline]
+    pub fn write<S: AsRef<str>>(&mut self, input: S) {
+        writeln!(&self.content, "{}", input);
+    }
 }
 
-// new impl on `core` module
-#[derive(Clone)]
-pub(crate) struct Workgroup(Vec<u32>);
+pub(crate) enum Directive {
+    F16,
+}
 
-impl Display for Workgroup {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        format!()
+impl Directive {
+    fn extension(self) -> &'static str {
+        match self {
+            Directive::F16 => "shader-f16",
+        }
     }
 }
 
 pub(crate) trait ShaderCore {
+    fn insert_directive(&mut self, directive: Directive);
     fn insert_header(&mut self, elements: &dyn BundleShader);
     fn insert_compute(&mut self, op: &dyn OperationShader);
 }
 
 #[cfg(feature = "wsgl")]
 impl ShaderCore for Module {
+    fn insert_directive(&mut self, directive: Directive) {
+        self.write(directive.extension());
+    }
     fn insert_header(&mut self, bundle: &dyn BundleShader) {
         let mut _headers = String::new();
         for bundle in bundles.iter() {
@@ -61,7 +72,7 @@ impl ShaderCore for Module {
         }
     }
 
-    fn insert_compute(&mut self, op: &dyn OperationShader, workgroup: Workgroup) {
+    fn insert_compute(&mut self, op: &dyn OperationShader) {
         let mut _calls = String::new();
         for op in ops.iter() {}
     }

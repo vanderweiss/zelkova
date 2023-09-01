@@ -61,9 +61,9 @@ impl Workgroup {
 pub(crate) struct Operation<T> 
     where T: Component,
 {
-    state: State,
-    workgroup: Workgroup,
-    ty: Shader,
+    pub state: State,
+    pub workgroup: Workgroup,
+    pub ty: Shader,
 
     target: PhantomData<T>,
 }

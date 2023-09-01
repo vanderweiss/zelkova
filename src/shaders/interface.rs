@@ -5,10 +5,12 @@ use std::{
 
 use crate::{
     core::{Bundle, Operation},
-    internals::Component,
+    types::{Component, Packet},
 };
 
-pub(crate) trait BundleShader {
+pub(crate) trait ShaderAbstraction {}
+
+pub(crate) trait BundleShader: ShaderAbstraction + Packet {
     fn alias(&self) -> String;
     fn mode(&self) -> &'static str;
     fn space(&self) -> &'static str;
@@ -77,8 +79,10 @@ where
 // will be moved to `core` module
 trait SupportedComponents {}
 
-pub(crate) trait OperationShader {
+pub(crate) trait OperationShader: ShaderAbstraction {
+    //fn alias(&self) -> String {}
     fn add(&self, lhs: &dyn BundleShader, rhs: &dyn BundleShader);
+    fn workgroup(&self) -> String;
 }
 
 #[cfg(feature = "wsgl")]
@@ -86,12 +90,15 @@ impl<T> OperationShader for Operation<T>
 where
     T: Component,
 {
-    fn add(&self, lhs: &dyn BundleShader, rhs: &dyn BundleShader) {
-        format!("fn add() {}");
+    //fn alias(&self) -> String {}
+    fn workgroup(&self) -> String {
+        format!("@workgroup_size({})", match self.ty {
+            
+        })
     }
 }
 
-/*
+
 #[cfg(feature = "wsgl")]
 macro_rules! impl_arithmetic {
     ($($op:ident, $fn:ident, )*) => {$(
