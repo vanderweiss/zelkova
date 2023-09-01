@@ -8,9 +8,20 @@ use crate::{
     types::{Component, Packet},
 };
 
-pub(crate) trait ShaderAbstraction {}
+pub(crate) trait ShaderAbstraction {
+    const IMPLS: bool = false; type Source;
 
-pub(crate) trait BundleShader: ShaderAbstraction + Packet {
+    fn valid(&self) -> bool {
+        <Source as ShaderAbstraction>::IMPLS
+    }
+}
+
+#[cfg(feature = "wsgl")]
+impl ShaderAbstraction {
+    const IMPLS: bool = true;
+}
+
+pub(crate) trait BundleShader: ShaderAbstraction + Packet {   
     fn alias(&self) -> String;
     fn mode(&self) -> &'static str;
     fn space(&self) -> &'static str;
@@ -38,7 +49,6 @@ where
         self.specifier().0
     }
 
-    #[inline]
     fn specifier(&self) -> (&'static str, &'static str) {
         if self.buffer.is_uniform() {
             ("uniform", "read")
@@ -89,12 +99,12 @@ pub(crate) trait OperationShader: ShaderAbstraction {
 impl<T> OperationShader for Operation<T>
 where
     T: Component,
-{
+{    
     //fn alias(&self) -> String {}
+
+    #[inline]
     fn workgroup(&self) -> String {
-        format!("@workgroup_size({})", match self.ty {
-            
-        })
+        format!("@workgroup_size({})", self.workgroup.collapse())
     }
 }
 

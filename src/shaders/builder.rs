@@ -42,16 +42,9 @@ impl Module {
     }
 }
 
+#[derive(Clone, Copy)]
 pub(crate) enum Directive {
     F16,
-}
-
-impl Directive {
-    fn extension(self) -> &'static str {
-        match self {
-            Directive::F16 => "shader-f16",
-        }
-    }
 }
 
 pub(crate) trait ShaderCore {
@@ -63,17 +56,12 @@ pub(crate) trait ShaderCore {
 #[cfg(feature = "wsgl")]
 impl ShaderCore for Module {
     fn insert_directive(&mut self, directive: Directive) {
-        self.write(directive.extension());
+        let extension = match directive {
+            Directive::F16 => "shader-f16",
+        };
+        self.write(extension);
     }
-    fn insert_header(&mut self, bundle: &dyn BundleShader) {
-        let mut _headers = String::new();
-        for bundle in bundles.iter() {
-            _headers += bundle.tag().as_str();
-        }
-    }
+    fn insert_header(&mut self, bundle: &dyn BundleShader) {}
 
-    fn insert_compute(&mut self, op: &dyn OperationShader) {
-        let mut _calls = String::new();
-        for op in ops.iter() {}
-    }
+    fn insert_compute(&mut self, op: &dyn OperationShader) {}
 }
