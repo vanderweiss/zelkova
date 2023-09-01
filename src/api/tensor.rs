@@ -13,12 +13,12 @@ use crate::{
 /// Denoting shape a.k.a. dimensions of a `Tensor`'s `TensorMeta`.
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct TensorOrder {
-    src: Vec<usize>,
+    src: Vec<u32>,
 }
 
 impl TensorOrder {
     #[inline]
-    fn fetch(&self) -> &Vec<usize> {
+    fn fetch(&self) -> &Vec<u32> {
         &self.src
     }
 
@@ -169,7 +169,7 @@ macro_rules! tsr {
     ( $root:literal $ (, $next:literal )* $(,)? ) => {
         {
             let _src = [$root $ (, $next )*];
-            let order = TensorOrder::Vector(vec![_src.len() as u64]);
+            let order = TensorOrder::Vector(vec![_src.len() as u32]);
             Tensor::from_array(_tensor, raw)
         }
 

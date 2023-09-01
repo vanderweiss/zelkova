@@ -39,7 +39,7 @@ impl Default for Binding {
 
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub(crate) enum Dimensions {
-    Sized(Vec<usize>),
+    Sized(Vec<u32>),
     Unsized,
 }
 
@@ -191,7 +191,7 @@ pub(crate) struct Properties {
 }
 
 impl Properties {
-    pub fn construct<T>(layout: Layout, dims: Vec<usize>, op: Option<Operation<T>>) -> Self
+    pub fn construct<T>(layout: Layout, dims: Vec<u32>, op: Option<Operation<T>>) -> Self
     where
         T: Component,
     {
@@ -296,7 +296,7 @@ impl<T> Bundle<T>
 where
     T: Component,
 {
-    pub fn bind_init(dims: Vec<usize>) -> Result<Self, wgpu::Error> {
+    pub fn bind_init(dims: Vec<u32>) -> Result<Self, wgpu::Error> {
         let layout = Layout::default();
         let props = Properties::construct(layout, dims, None);
 
@@ -310,7 +310,7 @@ where
         Ok(bundle)
     }
 
-    pub fn bind_future(dims: Vec<usize>, op: Operation<T>) -> Result<Self, wgpu::Error> {
+    pub fn bind_future(dims: Vec<u32>, op: Operation<T>) -> Result<Self, wgpu::Error> {
         let layout = Layout::Future;
         let props = Properties::construct(layout, dims, Some(op));
 
@@ -324,7 +324,7 @@ where
         Ok(bundle)
     }
 
-    pub fn bind_dyn(dims: Vec<usize>) -> Result<Self, wgpu::Error> {
+    pub fn bind_dyn(dims: Vec<u32>) -> Result<Self, wgpu::Error> {
         let layout = Layout::Dyn;
         let props = Properties::construct(layout, dims, None);
 
