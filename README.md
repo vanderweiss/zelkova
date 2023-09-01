@@ -11,7 +11,7 @@ Built on top of wgpu-rs, it relies on shader generation for the heavy lifting.
 Currently very work-in-progress; refer to the checklist below.
 
 Checklist: 
-- [ ] functional math framework with wgpu (around August)
+- [ ] functional math framework with wgpu (around August, overdue albeit 99% close to completion)
 - [ ] model implementations (around Halloween)
 - [ ] actually usable (uhh idk)
 - [ ] soon 
