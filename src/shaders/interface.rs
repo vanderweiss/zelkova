@@ -17,9 +17,9 @@ pub(crate) trait BundleShader {
 }
 
 #[cfg(feature = "wsgl")]
-impl<C> BundleShader for Bundle<C>
+impl<T> BundleShader for Bundle<T>
 where
-    C: Component,
+    T: Component,
 {
     #[inline]
     fn alias(&self) -> String {
@@ -82,7 +82,10 @@ pub(crate) trait OperationShader {
 }
 
 #[cfg(feature = "wsgl")]
-impl OperationShader for Operation {
+impl<T> OperationShader for Operation<T>
+where
+    T: Component,
+{
     fn add(&self, lhs: &dyn BundleShader, rhs: &dyn BundleShader) {
         format!("fn add() {}");
     }

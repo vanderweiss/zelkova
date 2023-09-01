@@ -5,7 +5,10 @@ use std::{
     ops,
 };
 
-use crate::{core::Bundle, internals::Component};
+use crate::{
+    core::{Bundle, Operation},
+    types::{Component, Packet},
+};
 
 /// Denoting shape a.k.a. dimensions of a `Tensor`'s `TensorMeta`.
 #[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -42,14 +45,22 @@ impl Display for TensorOrder {
 }
 
 /// Source container of a `Tensor`'s data, either owned or referenced
-pub(crate) struct TensorMeta<'s, C: Component, const N: usize> {
-    src: Option<&'s [C]>,
-    per: Option<Vec<C>>,
+pub(crate) struct TensorMeta<'s, T, const N: usize>
+where
+    T: Component,
+    Bundle<T>: Packet,
+{
+    src: Option<&'s [T]>,
+    per: Option<Vec<T>>,
 }
 
-impl<'s, C: Component, const N: usize> TensorMeta<'s, C, N> {
+impl<'s, T, const N: usize> TensorMeta<'s, T, N>
+where
+    T: Component,
+    Bundle<T>: Packet,
+{
     #[inline]
-    pub fn from_reference(_src: &'s [C]) -> Self {
+    pub fn from_reference(_src: &'s [T]) -> Self {
         Self {
             src: Some(_src),
             per: None,
@@ -57,7 +68,7 @@ impl<'s, C: Component, const N: usize> TensorMeta<'s, C, N> {
     }
 
     #[inline]
-    pub fn from_persist(_src: [C; N]) -> Self {
+    pub fn from_persist(_src: [T; N]) -> Self {
         Self {
             src: None,
             per: Some(Vec::from(_src)),
@@ -71,23 +82,31 @@ impl<'s, C: Component, const N: usize> TensorMeta<'s, C, N> {
 }
 
 /// Most basic element in the toolkit, composing every model.
-pub struct Tensor<'s, C: Component, const N: usize> {
+pub struct Tensor<'s, T, const N: usize>
+where
+    T: Component,
+    Bundle<T>: Packet,
+{
     pub order: TensorOrder,
 
     #[doc(hidden)]
-    bundle: Bundle<C>,
+    bundle: Bundle<T>,
 
     #[doc(hidden)]
-    meta: TensorMeta<'s, C, N>,
+    meta: TensorMeta<'s, T, N>,
 }
 
-impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
+impl<'s, T, const N: usize> Tensor<'s, T, N>
+where
+    T: Component,
+    Bundle<T>: Packet,
+{
     #[inline]
-    fn _fetch(&self) -> &Bundle<C> {
+    fn _fetch(&self) -> &Bundle<T> {
         &self.bundle
     }
 
-    pub fn from_array(_src: [C; N], order: TensorOrder) -> Self {
+    pub fn from_array(_src: [T; N], order: TensorOrder) -> Self {
         let bundle = Bundle::bind_init(order.fetch()).unwrap();
         let meta = TensorMeta::from_persist(_src);
 
@@ -98,7 +117,7 @@ impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
         }
     }
 
-    pub fn from_slice(_src: &'s [C], order: TensorOrder) -> Self {
+    pub fn from_slice(_src: &'s [T], order: TensorOrder) -> Self {
         let bundle = Bundle::bind_init(order.fetch()).unwrap();
         let meta = TensorMeta::from_reference(_src);
 
@@ -109,7 +128,7 @@ impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
         }
     }
 
-    pub fn cast<T: Component>(&mut self) {}
+    pub fn cast<C: Component>(&mut self) {}
     pub fn determinant(&self) {}
     pub fn inverse(&self) {}
 
@@ -123,10 +142,12 @@ impl<'s, C: Component, const N: usize> Tensor<'s, C, N> {
 macro_rules! impl_ops {
     ( $ ( $trait:ident $fn:ident, )* ) => {
         $ (
-            impl<'s, C: Component, const N: usize> ops::$trait for Tensor<'s, C, N> {
-                type Output = Tensor<'s, C, N>;
+            impl<'s, T, const N: usize> ops::$trait for Tensor<'s, T, N> where
+                T: Component,
+            {
+                type Output = Tensor<'s, T, N>;
 
-                fn $fn(self, other: Tensor<'s, C, N>) -> Self::Output {
+                fn $fn(self, other: Tensor<'s, T, N>) -> Self::Output {
                     let (lb, rb) = (self._fetch(), other._fetch());
                     other
                 }

@@ -5,9 +5,9 @@
 
 pub mod api;
 pub(crate) mod core;
-pub(crate) mod helper;
 pub(crate) mod internals;
 pub(crate) mod shaders;
+pub(crate) mod types;
 
 pub use self::api::{Tensor, TensorOrder};
 

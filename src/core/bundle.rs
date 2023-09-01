@@ -10,7 +10,7 @@ use {
     wgpu,
 };
 
-use crate::internals::{Buffer, Component};
+use crate::{internals::Buffer, types::Component};
 
 use super::Operation;
 
@@ -191,7 +191,10 @@ pub(crate) struct Properties {
 }
 
 impl Properties {
-    pub fn construct(layout: Layout, dims: Vec<usize>, op: Option<Operation>) -> Self {
+    pub fn construct<T>(layout: Layout, dims: Vec<usize>, op: Option<Operation<T>>) -> Self
+    where
+        T: Component,
+    {
         let props = match layout {
             Layout::Init => Self {
                 dims: Dimensions::Sized(dims),
@@ -278,20 +281,20 @@ impl DerefMut for BufferHolder {
 /// Interface on top of the toolkit's wrapper for buffers, used for shader generation and extends
 /// to other api-related structures.
 
-pub(crate) struct Bundle<C>
+pub(crate) struct Bundle<T>
 where
-    C: Component,
+    T: Component,
 {
     pub buffer: BufferHolder,
     pub layout: Layout,
     pub props: Properties,
 
-    target: PhantomData<C>,
+    target: PhantomData<T>,
 }
 
-impl<C> Bundle<C>
+impl<T> Bundle<T>
 where
-    C: Component,
+    T: Component,
 {
     pub fn bind_init(dims: Vec<usize>) -> Result<Self, wgpu::Error> {
         let layout = Layout::default();
@@ -307,7 +310,7 @@ where
         Ok(bundle)
     }
 
-    pub fn bind_future(dims: Vec<usize>, op: Operation) -> Result<Self, wgpu::Error> {
+    pub fn bind_future(dims: Vec<usize>, op: Operation<T>) -> Result<Self, wgpu::Error> {
         let layout = Layout::Future;
         let props = Properties::construct(layout, dims, Some(op));
 
@@ -337,7 +340,7 @@ where
 
     #[inline]
     pub fn typename(&self) -> &'static str {
-        any::type_name::<C>()
+        any::type_name::<T>()
     }
 
     /// Map to CPU and update if requested.

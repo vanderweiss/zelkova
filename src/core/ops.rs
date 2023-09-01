@@ -1,7 +1,8 @@
 use std::marker::PhantomData;
 
 use super::Bundle;
-use crate::internals::Component;
+
+use crate::types::Component;
 
 #[derive(Clone, Copy, Default)]
 enum State {
@@ -57,7 +58,9 @@ impl Workgroup {
     }
 }
 
-pub(crate) struct Operation<T: Component> {
+pub(crate) struct Operation<T> 
+    where T: Component,
+{
     state: State,
     workgroup: Workgroup,
     ty: Shader,

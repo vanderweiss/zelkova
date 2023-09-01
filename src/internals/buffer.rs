@@ -1,30 +1,8 @@
-use {
-    bytemuck::{self, NoUninit},
-    std::mem,
-    wgpu,
-};
+use {bytemuck, std::mem, wgpu};
+
+use crate::types::Component;
 
 use super::Handler;
-
-pub(crate) mod _sealed {
-    pub trait Sealed {}
-}
-
-pub trait Component: _sealed::Sealed + NoUninit {}
-
-macro_rules! impl_component {
-    ($($ty:ident)*) => {$(
-        impl Component for $ty {}
-        impl _sealed::Sealed for $ty {}
-    )*}
-}
-
-// Valid types to operate on buffers
-impl_component! {
-    u16 u32 u64
-    i16 i32 i64
-    f32 f64
-}
 
 /// Identifiers for `Buffer`s
 #[derive(Clone, Copy, Default)]
@@ -43,17 +21,20 @@ pub(crate) struct Buffer {
 }
 
 impl Buffer {
-    pub fn bind<C: Component>(
+    pub fn bind<T>(
         handler: Handler,
         ty: BufferType,
-        _content: Option<&[C]>,
+        _content: Option<&[T]>,
         _size: Option<u64>,
-    ) -> Result<Self, wgpu::Error> {
+    ) -> Result<Self, wgpu::Error>
+    where
+        T: Component,
+    {
         let _buffer = {
             match ty {
                 BufferType::Init => handler.alloc_buffer_init({
                     if let Some(content) = _content {
-                        bytemuck::cast_slice::<C, u8>(content)
+                        bytemuck::cast_slice::<T, u8>(content)
                     } else {
                         panic!()
                     }
@@ -62,7 +43,7 @@ impl Buffer {
                     if let Some(size) = _size {
                         size
                     } else {
-                        mem::size_of::<C> as u64
+                        mem::size_of::<T> as u64
                     }
                 })?,
             }

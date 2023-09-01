@@ -1,3 +1,3 @@
 pub mod tensor;
 
-pub use self::tensor::{Tensor, TensorOrder};
+pub use tensor::{Tensor, TensorOrder};
