@@ -1,7 +1,7 @@
 # zelkova
 
 `zelkova` is a toolkit aimed towards simple and easy deployment of ML models. Built on top of [wgpu](https://github.com/gfx-rs/wgpu), 
-it relies on shader generation focused towards computing. 
+it relies on shader generation focused on computing. 
 
 ## Overview
 
