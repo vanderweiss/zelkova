@@ -128,7 +128,16 @@ where
         }
     }
 
-    pub fn cast<C: Component>(&mut self) {}
+    pub fn from_populate(_src: T, order: TensorOrder) -> Self {}
+    pub fn from_dynamic(order: TensorOrder) -> Self {}
+
+    pub fn cast<'c: 's, C, const M: usize>(&mut self) -> Tensor<'c, C, M>
+    where
+        C: Component,
+        Bundle<C>: Packet,
+    {
+    }
+
     pub fn determinant(&self) {}
     pub fn inverse(&self) {}
 
@@ -137,6 +146,8 @@ where
         let (src, per) = self.meta.slots();
         src || per
     }
+
+    fn populate(&mut self) {}
 }
 
 macro_rules! impl_ops {
@@ -144,6 +155,7 @@ macro_rules! impl_ops {
         $ (
             impl<'s, T, const N: usize> ops::$trait for Tensor<'s, T, N> where
                 T: Component,
+                Bundle<T>: Packet,
             {
                 type Output = Tensor<'s, T, N>;
 

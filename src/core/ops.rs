@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::Bundle;
 
-use crate::types::Component;
+use crate::types::{Component, Packet};
 
 #[derive(Clone, Copy, Default)]
 enum State {
@@ -58,8 +58,10 @@ impl Workgroup {
     }
 }
 
-pub(crate) struct Operation<T> 
-    where T: Component,
+pub(crate) struct Operation<T>
+where
+    T: Component,
+    Bundle<T>: Packet,
 {
     pub state: State,
     pub workgroup: Workgroup,
@@ -68,17 +70,17 @@ pub(crate) struct Operation<T>
     target: PhantomData<T>,
 }
 
-impl<T: Component> Operation<T> {
-    pub fn new<L, R>(lhs: &Bundle<L>, rhs: &Bundle<R>, ty: Shader) -> Self
+impl<T> Operation<T>
+where
+    T: Component,
+    Bundle<T>: Packet,
+{
+    pub fn new<L, R, Lhs, Rhs>(lhs: &Bundle<L>, rhs: &Bundle<R>, ty: Shader) -> Self
     where
         L: Component,
         R: Component,
     {
-        let dims: Vec<u32> = {
-            if lhs.props.dims == rhs.props.dims {
-                
-            }
-        }
+        let dims: Vec<u32> = { if lhs.props.dims == rhs.props.dims {} };
     }
 
     pub fn resolved(&self) -> bool {

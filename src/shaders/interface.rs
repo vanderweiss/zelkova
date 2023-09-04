@@ -8,20 +8,21 @@ use crate::{
     types::{Component, Packet},
 };
 
+/*
 pub(crate) trait ShaderAbstraction {
-    const IMPLS: bool = false; type Source;
+    const IMPLS: bool = false;
 
     fn valid(&self) -> bool {
-        <Source as ShaderAbstraction>::IMPLS
+        Self::IMPLS
     }
 }
 
 #[cfg(feature = "wsgl")]
 impl ShaderAbstraction {
     const IMPLS: bool = true;
-}
+}*/
 
-pub(crate) trait BundleShader: ShaderAbstraction + Packet {   
+pub(crate) trait BundleShader: Packet {
     fn alias(&self) -> String;
     fn mode(&self) -> &'static str;
     fn space(&self) -> &'static str;
@@ -33,6 +34,7 @@ pub(crate) trait BundleShader: ShaderAbstraction + Packet {
 impl<T> BundleShader for Bundle<T>
 where
     T: Component,
+    Bundle<T>: Packet,
 {
     #[inline]
     fn alias(&self) -> String {
@@ -70,7 +72,7 @@ where
         );
 
         let post = {
-            if self.props.ready() {
+            if self.ready() {
                 format!(
                     "{0}: array<{1}, {2}>",
                     pre,
@@ -89,7 +91,7 @@ where
 // will be moved to `core` module
 trait SupportedComponents {}
 
-pub(crate) trait OperationShader: ShaderAbstraction {
+pub(crate) trait OperationShader {
     //fn alias(&self) -> String {}
     fn add(&self, lhs: &dyn BundleShader, rhs: &dyn BundleShader);
     fn workgroup(&self) -> String;
@@ -99,15 +101,12 @@ pub(crate) trait OperationShader: ShaderAbstraction {
 impl<T> OperationShader for Operation<T>
 where
     T: Component,
-{    
-    //fn alias(&self) -> String {}
-
+{
     #[inline]
     fn workgroup(&self) -> String {
         format!("@workgroup_size({})", self.workgroup.collapse())
     }
 }
-
 
 #[cfg(feature = "wsgl")]
 macro_rules! impl_arithmetic {
@@ -119,4 +118,3 @@ macro_rules! impl_arithmetic {
         }
     )*}
 }
-*/

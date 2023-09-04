@@ -10,7 +10,10 @@ use {
     wgpu,
 };
 
-use crate::{internals::Buffer, types::Component};
+use crate::{
+    internals::Buffer,
+    types::{Component, Packet},
+};
 
 use super::Operation;
 
@@ -52,17 +55,6 @@ pub(crate) enum Group {
 impl Default for Group {
     fn default() -> Group {
         Group::Base
-    }
-}
-
-pub(crate) enum Init {
-    Result,
-    Future(Operation),
-}
-
-impl Default for Init {
-    fn default() -> Self {
-        Init::Result
     }
 }
 
@@ -111,7 +103,6 @@ impl_property! {
     Binding,
     Dimensions,
     Group,
-    Init,
     Relay,
     Storage,
 }
@@ -185,7 +176,6 @@ pub(crate) struct Properties {
     pub binding: Binding,
     pub dims: Dimensions,
     pub group: Group,
-    pub init: Init,
     pub relay: Relay,
     pub storage: Storage,
 }
@@ -194,6 +184,7 @@ impl Properties {
     pub fn construct<T>(layout: Layout, dims: Vec<u32>, op: Option<Operation<T>>) -> Self
     where
         T: Component,
+        Bundle<T>: Packet,
     {
         let props = match layout {
             Layout::Init => Self {
@@ -203,13 +194,6 @@ impl Properties {
             Layout::Future => Self {
                 binding: Binding::Hold,
                 dims: Dimensions::Sized(dims),
-                init: {
-                    if let Some(op) = op {
-                        Init::Future(op)
-                    } else {
-                        panic!()
-                    }
-                },
                 relay: Relay::Operate,
                 ..Default::default()
             },
@@ -222,14 +206,6 @@ impl Properties {
 
         props
     }
-
-    #[inline]
-    pub fn ready(&self) -> bool {
-        match self.init {
-            Init::Result => true,
-            Init::Future(ref op) => op.resolved(),
-        }
-    }
 }
 
 impl Default for Properties {
@@ -238,7 +214,6 @@ impl Default for Properties {
             binding: Binding::default(),
             dims: Dimensions::Unsized,
             group: Group::default(),
-            init: Init::default(),
             relay: Relay::default(),
             storage: Storage::default(),
         }
@@ -284,10 +259,12 @@ impl DerefMut for BufferHolder {
 pub(crate) struct Bundle<T>
 where
     T: Component,
+    Bundle<T>: Packet,
 {
     pub buffer: BufferHolder,
     pub layout: Layout,
     pub props: Properties,
+    pub op: Option<Operation<T>>,
 
     target: PhantomData<T>,
 }
@@ -295,6 +272,7 @@ where
 impl<T> Bundle<T>
 where
     T: Component,
+    Bundle<T>: Packet,
 {
     pub fn bind_init(dims: Vec<u32>) -> Result<Self, wgpu::Error> {
         let layout = Layout::default();
@@ -304,6 +282,7 @@ where
             buffer: BufferHolder::new(),
             layout,
             props,
+            op: None,
             target: PhantomData,
         };
 
@@ -318,6 +297,7 @@ where
             buffer: BufferHolder::new(),
             layout,
             props,
+            op: Some(op),
             target: PhantomData,
         };
 
@@ -332,10 +312,16 @@ where
             buffer: BufferHolder::new(),
             layout,
             props,
+            op: None,
             target: PhantomData,
         };
 
         Ok(bundle)
+    }
+
+    #[inline]
+    pub fn ready(&self) -> bool {
+        self.buffer.init
     }
 
     #[inline]
