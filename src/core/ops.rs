@@ -5,14 +5,14 @@ use super::Bundle;
 use crate::types::{Component, Packet};
 
 #[derive(Clone, Copy, Default)]
-enum State {
+pub(crate) enum State {
     #[default]
     Pending,
     Done,
 }
 
 #[derive(Clone, Copy)]
-enum ElementType {
+pub(crate) enum ElementType {
     Add,
     Sub,
     Mul,
@@ -22,7 +22,7 @@ enum ElementType {
 }
 
 #[derive(Clone, Copy)]
-enum DimensionalType {
+pub(crate) enum DimensionalType {
     Sum,
     Determinant,
     Inverse,
@@ -75,12 +75,13 @@ where
     T: Component,
     Bundle<T>: Packet,
 {
-    pub fn new<L, R, Lhs, Rhs>(lhs: &Bundle<L>, rhs: &Bundle<R>, ty: Shader) -> Self
+    pub fn new<L, R, Lhs, Rhs>(lhs: &Bundle<L>, rhs: &Bundle<R>, ty: Shader)
     where
         L: Component,
         R: Component,
+        Bundle<L>: Packet,
+        Bundle<R>: Packet,
     {
-        let dims: Vec<u32> = { if lhs.props.dims == rhs.props.dims {} };
     }
 
     pub fn resolved(&self) -> bool {

@@ -77,9 +77,9 @@ impl Relay {
     #[inline]
     fn exhausted(&self) -> bool {
         match self {
-            Skip => true,
-            Operate => false,
-            Map => true,
+            Relay::Skip => true,
+            Relay::Operate => false,
+            Relay::Map => true,
         }
     }
 }
@@ -125,7 +125,7 @@ impl Fetch for Binding {
 }
 
 impl Fetch for Dimensions {
-    type Value = usize;
+    type Value = u32;
 
     #[inline]
     fn fetch(&self) -> Self::Value {
@@ -181,7 +181,7 @@ pub(crate) struct Properties {
 }
 
 impl Properties {
-    pub fn construct<T>(layout: Layout, dims: Vec<u32>, op: Option<Operation<T>>) -> Self
+    pub fn construct<T>(layout: Layout, dims: Vec<u32>) -> Self
     where
         T: Component,
         Bundle<T>: Packet,
@@ -276,7 +276,7 @@ where
 {
     pub fn bind_init(dims: Vec<u32>) -> Result<Self, wgpu::Error> {
         let layout = Layout::default();
-        let props = Properties::construct(layout, dims, None);
+        let props = Properties::construct(layout, dims);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
@@ -291,7 +291,7 @@ where
 
     pub fn bind_future(dims: Vec<u32>, op: Operation<T>) -> Result<Self, wgpu::Error> {
         let layout = Layout::Future;
-        let props = Properties::construct(layout, dims, Some(op));
+        let props = Properties::construct(layout, dims);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
@@ -306,7 +306,7 @@ where
 
     pub fn bind_dyn(dims: Vec<u32>) -> Result<Self, wgpu::Error> {
         let layout = Layout::Dyn;
-        let props = Properties::construct(layout, dims, None);
+        let props = Properties::construct(layout, dims);
 
         let bundle = Self {
             buffer: BufferHolder::new(),

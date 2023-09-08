@@ -38,7 +38,7 @@ impl Module {
 
     #[inline]
     pub fn write<S: AsRef<str>>(&mut self, input: S) {
-        writeln!(&self.content, "{}", input);
+        writeln!(&mut self.content, "{}", input.as_ref());
     }
 }
 

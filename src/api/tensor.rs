@@ -6,29 +6,29 @@ use std::{
 };
 
 use crate::{
-    core::{Bundle, Operation},
+    core::Bundle,
     types::{Component, Packet},
 };
 
 /// Denoting shape a.k.a. dimensions of a `Tensor`'s `TensorMeta`.
-#[derive(Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct TensorOrder {
     src: Vec<u32>,
 }
 
 impl TensorOrder {
     #[inline]
-    fn fetch(&self) -> &Vec<u32> {
-        &self.src
-    }
-
-    #[inline]
-    pub fn count(&self) -> usize {
+    pub fn count(&self) -> u32 {
         self.src.iter().sum()
     }
 
     #[inline]
-    pub fn size(&self) -> usize {
+    pub fn pull(&self) -> Vec<u32> {
+        self.src.clone()
+    }
+
+    #[inline]
+    pub fn size(&self) -> u32 {
         self.src.iter().product()
     }
 
@@ -89,10 +89,7 @@ where
 {
     pub order: TensorOrder,
 
-    #[doc(hidden)]
     bundle: Bundle<T>,
-
-    #[doc(hidden)]
     meta: TensorMeta<'s, T, N>,
 }
 
@@ -101,13 +98,8 @@ where
     T: Component,
     Bundle<T>: Packet,
 {
-    #[inline]
-    fn _fetch(&self) -> &Bundle<T> {
-        &self.bundle
-    }
-
     pub fn from_array(_src: [T; N], order: TensorOrder) -> Self {
-        let bundle = Bundle::bind_init(order.fetch()).unwrap();
+        let bundle = Bundle::bind_init(order.pull()).unwrap();
         let meta = TensorMeta::from_persist(_src);
 
         Self {
@@ -118,7 +110,7 @@ where
     }
 
     pub fn from_slice(_src: &'s [T], order: TensorOrder) -> Self {
-        let bundle = Bundle::bind_init(order.fetch()).unwrap();
+        let bundle = Bundle::bind_init(order.pull()).unwrap();
         let meta = TensorMeta::from_reference(_src);
 
         Self {
@@ -128,26 +120,28 @@ where
         }
     }
 
-    pub fn from_populate(_src: T, order: TensorOrder) -> Self {}
-    pub fn from_dynamic(order: TensorOrder) -> Self {}
-
+    /*
     pub fn cast<'c: 's, C, const M: usize>(&mut self) -> Tensor<'c, C, M>
     where
         C: Component,
         Bundle<C>: Packet,
     {
     }
+    */
 
     pub fn determinant(&self) {}
     pub fn inverse(&self) {}
 
+    /// Pull internal `Bundle` representation.
+    pub(crate) fn fetch(&self) -> &Bundle<T> {
+        &self.bundle
+    }
+
     /// Denotes a `TensorMeta` of valid slots, initialized.
-    pub fn ready(&self) -> bool {
+    fn ready(&self) -> bool {
         let (src, per) = self.meta.slots();
         src || per
     }
-
-    fn populate(&mut self) {}
 }
 
 macro_rules! impl_ops {
@@ -160,7 +154,7 @@ macro_rules! impl_ops {
                 type Output = Tensor<'s, T, N>;
 
                 fn $fn(self, other: Tensor<'s, T, N>) -> Self::Output {
-                    let (lb, rb) = (self._fetch(), other._fetch());
+                    let (lb, rb) = (self.fetch(), other.fetch());
                     other
                 }
             }
@@ -168,12 +162,14 @@ macro_rules! impl_ops {
     };
 }
 
+/*
 impl_ops! {
     Add add,
     Sub sub,
     Mul mul,
     Div div,
 }
+*/
 
 #[macro_export]
 macro_rules! tsr {
