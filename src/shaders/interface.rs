@@ -2,7 +2,7 @@ use std::any::type_name;
 
 use crate::{
     core::{Bundle, Operation},
-    types::{Component, Packet},
+    types::{Packet, SupportedPacket},
 };
 
 /*
@@ -19,7 +19,7 @@ impl ShaderAbstraction {
     const IMPLS: bool = true;
 }*/
 
-pub(crate) trait BundleShader: Packet {
+pub(crate) trait BundleShader {
     fn alias(&self) -> String;
     fn binding(&self) -> String;
     fn group(&self) -> String;
@@ -30,8 +30,7 @@ pub(crate) trait BundleShader: Packet {
 #[cfg(feature = "wsgl")]
 impl<T> BundleShader for Bundle<T>
 where
-    T: Component,
-    Bundle<T>: Packet,
+    Packet<T>: SupportedPacket,
 {
     #[inline]
     fn alias(&self) -> String {
@@ -79,8 +78,7 @@ pub(crate) trait OperationShader {
 #[cfg(feature = "wsgl")]
 impl<T> OperationShader for Operation<T>
 where
-    T: Component,
-    Bundle<T>: Packet,
+    Packet<T>: SupportedPacket,
 {
     #[inline]
     fn workgroup(&self) -> String {

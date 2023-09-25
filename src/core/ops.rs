@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use super::Bundle;
 
-use crate::types::{Component, Packet};
+use crate::types::{Packet, SupportedPacket};
 
 #[derive(Clone, Copy, Default)]
 pub(crate) enum State {
@@ -60,8 +60,7 @@ impl Workgroup {
 
 pub(crate) struct Operation<T>
 where
-    T: Component,
-    Bundle<T>: Packet,
+    Packet<T>: SupportedPacket,
 {
     pub state: State,
     pub workgroup: Workgroup,
@@ -72,15 +71,12 @@ where
 
 impl<T> Operation<T>
 where
-    T: Component,
-    Bundle<T>: Packet,
+    Packet<T>: SupportedPacket,
 {
     pub fn new<L, R, Lhs, Rhs>(lhs: &Bundle<L>, rhs: &Bundle<R>, ty: Shader)
     where
-        L: Component,
-        R: Component,
-        Bundle<L>: Packet,
-        Bundle<R>: Packet,
+        Packet<L>: SupportedPacket,
+        Packet<R>: SupportedPacket,
     {
     }
 

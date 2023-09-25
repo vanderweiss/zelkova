@@ -12,7 +12,7 @@ use {
 
 use crate::{
     internals::Buffer,
-    types::{Component, Packet},
+    types::{Packet, SupportedPacket},
 };
 
 use super::Operation;
@@ -183,8 +183,7 @@ pub(crate) struct Properties {
 impl Properties {
     pub fn construct<T>(layout: Layout, dims: Vec<u32>) -> Self
     where
-        T: Component,
-        Bundle<T>: Packet,
+        Packet<T>: SupportedPacket,
     {
         let props = match layout {
             Layout::Init => Self {
@@ -258,8 +257,7 @@ impl DerefMut for BufferHolder {
 
 pub(crate) struct Bundle<T>
 where
-    T: Component,
-    Bundle<T>: Packet,
+    Packet<T>: SupportedPacket,
 {
     pub buffer: BufferHolder,
     pub layout: Layout,
@@ -271,12 +269,11 @@ where
 
 impl<T> Bundle<T>
 where
-    T: Component,
-    Bundle<T>: Packet,
+    Packet<T>: SupportedPacket,
 {
     pub fn bind_init(dims: Vec<u32>) -> Result<Self, wgpu::Error> {
         let layout = Layout::default();
-        let props = Properties::construct(layout, dims);
+        let props = Properties::construct::<T>(layout, dims);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
@@ -291,7 +288,7 @@ where
 
     pub fn bind_future(dims: Vec<u32>, op: Operation<T>) -> Result<Self, wgpu::Error> {
         let layout = Layout::Future;
-        let props = Properties::construct(layout, dims);
+        let props = Properties::construct::<T>(layout, dims);
 
         let bundle = Self {
             buffer: BufferHolder::new(),
@@ -306,7 +303,7 @@ where
 
     pub fn bind_dyn(dims: Vec<u32>) -> Result<Self, wgpu::Error> {
         let layout = Layout::Dyn;
-        let props = Properties::construct(layout, dims);
+        let props = Properties::construct::<T>(layout, dims);
 
         let bundle = Self {
             buffer: BufferHolder::new(),

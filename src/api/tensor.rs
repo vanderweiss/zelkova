@@ -7,7 +7,7 @@ use std::{
 
 use crate::{
     core::Bundle,
-    types::{Component, Packet},
+    types::{Component, Packet, SupportedPacket},
 };
 
 /// Denoting shape a.k.a. dimensions of a `Tensor`'s `TensorMeta`.
@@ -17,6 +17,10 @@ pub struct TensorOrder {
 }
 
 impl TensorOrder {
+    pub fn new(src: Vec<u32>) -> Self {
+        Self { src }
+    }
+
     #[inline]
     pub fn count(&self) -> u32 {
         self.src.iter().sum()
@@ -48,7 +52,6 @@ impl Display for TensorOrder {
 pub(crate) struct TensorMeta<'s, T, const N: usize>
 where
     T: Component,
-    Bundle<T>: Packet,
 {
     src: Option<&'s [T]>,
     per: Option<Vec<T>>,
@@ -57,7 +60,6 @@ where
 impl<'s, T, const N: usize> TensorMeta<'s, T, N>
 where
     T: Component,
-    Bundle<T>: Packet,
 {
     #[inline]
     pub fn from_reference(_src: &'s [T]) -> Self {
@@ -82,21 +84,21 @@ where
 }
 
 /// Most basic element in the toolkit, composing every model.
-pub struct Tensor<'s, T, const N: usize>
+pub struct Tensor<'s, T, U, const N: usize>
 where
     T: Component,
-    Bundle<T>: Packet,
+    Packet<U>: SupportedPacket,
 {
     pub order: TensorOrder,
 
-    bundle: Bundle<T>,
+    bundle: Bundle<U>,
     meta: TensorMeta<'s, T, N>,
 }
 
-impl<'s, T, const N: usize> Tensor<'s, T, N>
+impl<'s, T, U, const N: usize> Tensor<'s, T, U, N>
 where
     T: Component,
-    Bundle<T>: Packet,
+    Packet<U>: SupportedPacket,
 {
     pub fn from_array(_src: [T; N], order: TensorOrder) -> Self {
         let bundle = Bundle::bind_init(order.pull()).unwrap();
@@ -133,7 +135,7 @@ where
     pub fn inverse(&self) {}
 
     /// Pull internal `Bundle` representation.
-    pub(crate) fn fetch(&self) -> &Bundle<T> {
+    pub(crate) fn fetch(&self) -> &Bundle<U> {
         &self.bundle
     }
 
@@ -147,13 +149,16 @@ where
 macro_rules! impl_ops {
     ( $ ( $trait:ident $fn:ident, )* ) => {
         $ (
-            impl<'s, T, const N: usize> ops::$trait for Tensor<'s, T, N> where
+            impl<'s, T, U, const M: usize> ops::$trait for Tensor<'s, T, U, M> where
                 T: Component,
-                Bundle<T>: Packet,
+                Packet<U>: SupportedPacket,
             {
-                type Output = Tensor<'s, T, N>;
+                type Output = Tensor<'s, T, U, M>;
 
-                fn $fn(self, other: Tensor<'s, T, N>) -> Self::Output {
+                fn $fn<'t, V, W, const N: usize>(self, other: Tensor<'t, V, W, N>) -> Self::Output where
+                    V: Component,
+                    Packet<W>: SupportedPacket,
+                {
                     let (lb, rb) = (self.fetch(), other.fetch());
                     other
                 }
@@ -162,14 +167,12 @@ macro_rules! impl_ops {
     };
 }
 
-/*
 impl_ops! {
     Add add,
     Sub sub,
     Mul mul,
     Div div,
 }
-*/
 
 #[macro_export]
 macro_rules! tsr {
@@ -177,7 +180,7 @@ macro_rules! tsr {
     ( $root:literal $ (, $next:literal )* $(,)? ) => {
         {
             let _src = [$root $ (, $next )*];
-            let order = TensorOrder::Vector(vec![_src.len() as u32]);
+            let order = TensorOrder::new(vec![_src.len() as u32]);
             Tensor::from_array(_tensor, raw)
         }
 
@@ -203,7 +206,7 @@ macro_rules! tsr {
                 )*
             ];
 
-            let order = TensorOrder::Matrix(vec![x, y]);
+            let order = TensorOrder::new(vec![x, y]);
             Tensor::from_array(_src, order)
         }
     };
