@@ -1,20 +1,17 @@
 # zelkova
 
-`zelkova` is a toolkit aimed towards simple and easy deployment of ML models. Built on top of [wgpu](https://github.com/gfx-rs/wgpu), 
-it relies on shader generation focused on computing.
+`zelkova` is a linear algebra library fulfilling the purpose of setting a reliable framework for array-like containers via GPUs. 
 
 ## Overview
 
-As it strives to be fit for almost every machine learning task, it offers a wide selection of readily available architectures, 
-ranging from the most essential and popular ones, to the latest bleeding-edge. In addition to optimizers and evaluation metrics, 
-custom logic blocks can also be created by the user or tune existing ones. 
+Striving to fit almost any task and preparing the stage for libraries to come based off it, it aims to adapt to any context and manage resource usage to overcome limitations.
 
 Currently very work-in-progress; refer to the checklist below.
 
 ## Checklist: 
-- [ ] functional math framework with wgpu (overdue, 99% done)
-- [ ] foundational model implementations
-- [ ] scaling and offloading
-- [ ] soon
+- [ ] Functional math framework with OpenCL.
+- [ ] Backend specific implementations (WebGPU, CUDA, OpenGL, Vulkan)
+- [ ] Workload distribution and scheduling for hardware constraints.
+- [ ] Specific optimizations for ML, rendering, etc.
 
-**WARNING** Undergoing radical changes regarding the project's aim as of 2024.
+**WARNING** Undergoing radical changes regarding the project's aim as of 2024. This is the currently maintained branch.
