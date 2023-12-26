@@ -16,3 +16,5 @@ Currently very work-in-progress; refer to the checklist below.
 - [ ] foundational model implementations
 - [ ] scaling and offloading
 - [ ] soon
+
+**WARNING** Undergoing radical changes regarding the project's aim.
