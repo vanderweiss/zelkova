@@ -17,4 +17,4 @@ Currently very work-in-progress; refer to the checklist below.
 - [ ] scaling and offloading
 - [ ] soon
 
-**WARNING** Undergoing radical changes regarding the project's aim.
+**WARNING** Undergoing radical changes regarding the project's aim as of 2024.
