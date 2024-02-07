@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 bitflags = { version = "2.3.1", default-features = false }
-bytemuck = { version = "1.13.1", default-features = false }
+bytemuck = { version = "1.13.1", default-features = false, features = ["derive"] }
 pollster = { version = "0.3.0", default-features = false }
 wgpu = { version = "0.16.2", default-features = false, features = ["expose-ids", "wgsl"] }
 
@@ -13,3 +13,4 @@ wgpu = { version = "0.16.2", default-features = false, features = ["expose-ids",
 default = ["wsgl"]
 wsgl = []
 spirv = []
+abstract-types = []

@@ -1,6 +1,6 @@
 # zelkova
 
-`zelkova` is a linear algebra library fulfilling the purpose of setting a reliable framework for array-like containers via GPUs. 
+`zelkova` is a linear algebra library fulfilling the purpose of setting a reliable framework for n-dimensional containers via GPUs. 
 
 ## Overview
 
@@ -8,10 +8,12 @@ Striving to fit almost any task and preparing the stage for libraries to come ba
 
 Currently very work-in-progress; refer to the checklist below.
 
-## Checklist: 
+## Short-term: 
 - [ ] Functional math framework with OpenCL.
-- [ ] Backend specific implementations (WebGPU, CUDA, OpenGL, Vulkan)
 - [ ] Workload distribution and scheduling for hardware constraints.
 - [ ] Specific optimizations for ML, rendering, etc.
+
+## Long-term:
+- [ ] Possibility for backend specific implementations in order (WebGPU, CUDA, OpenGL, Vulkan)
 
 **WARNING** Undergoing radical changes regarding the project's aim as of 2024. This is the currently maintained branch.

@@ -1,6 +1,6 @@
 use {bytemuck, std::mem, wgpu};
 
-use crate::types::Component;
+use crate::types::{Packet, SupportedPacket};
 
 use super::Handler;
 
@@ -28,7 +28,7 @@ impl Buffer {
         _size: Option<u64>,
     ) -> Result<Self, wgpu::Error>
     where
-        T: Component,
+        Packet<T>: SupportedPacket,
     {
         let _buffer = {
             match ty {

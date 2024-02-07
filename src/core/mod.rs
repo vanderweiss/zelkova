@@ -1,5 +1,5 @@
-//pub(crate) mod error;
 pub(crate) mod bundle;
+pub(crate) mod error;
 pub(crate) mod instance;
 pub(crate) mod ops;
 
