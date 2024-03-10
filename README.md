@@ -1,12 +1,12 @@
-# zelkova
+# rhine
 
-`zelkova` is a linear algebra library fulfilling the purpose of setting a reliable framework for n-dimensional containers via GPUs. 
+`rhine` is a linear algebra library fulfilling the purpose of setting a reliable framework for n-dimensional containers via GPUs. 
 
 ## Overview
 
 Striving to fit almost any task and preparing the stage for libraries to come based off it, it aims to adapt to any context and manage resource usage to overcome limitations.
 
-Currently very work-in-progress; refer to the checklist below.
+Currently very work-in-progress; refer to the checklists below.
 
 ## Short-term: 
 - [ ] Functional math framework with OpenCL.
